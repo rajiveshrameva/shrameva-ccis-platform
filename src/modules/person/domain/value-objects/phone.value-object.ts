@@ -1,5 +1,5 @@
-import { ValueObject } from '../../base/value-object.base';
-import { ValidationException } from '../exceptions/domain-exception.base';
+import { ValueObject } from '../../../../shared/base/value-object.base';
+import { ValidationException } from '../../../../shared/domain/exceptions/domain-exception.base';
 
 /**
  * Phone Number Properties Interface

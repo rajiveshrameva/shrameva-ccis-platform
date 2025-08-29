@@ -331,3 +331,30 @@ export class CCISAssessmentID extends ID {
     return `/ccis-assessments/${this.getValue()}/details`;
   }
 }
+
+/**
+ * Person identifier
+ * Example: cid_3k9t1d8e4n2pr6s8u9v0w
+ * Used to identify individuals (students, employers, mentors, admins)
+ */
+export class PersonID extends ID {
+  private constructor(value: string) {
+    super(value);
+  }
+
+  public static generate(): PersonID {
+    return new PersonID(this.generateCIDValue());
+  }
+
+  public static fromString(value: string): PersonID {
+    return new PersonID(value);
+  }
+
+  /**
+   * Create person profile URL
+   * Example: /persons/cid_V1StGXR8_Z5jdHi6B-myT
+   */
+  public toProfileURL(): string {
+    return `/persons/${this.getValue()}`;
+  }
+}
