@@ -1,14 +1,19 @@
 // src/shared/infrastructure/database/prisma.service.ts
 
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 /**
  * Prisma Service for Shrameva CCIS Platform
- * 
+ *
  * Provides database connection management and query execution
  * for the Shrameva CCIS platform using Prisma ORM with PostgreSQL.
- * 
+ *
  * Features:
  * - Automatic connection management
  * - Connection pooling
@@ -17,14 +22,18 @@ import { PrismaClient } from '@prisma/client';
  * - Error handling and monitoring
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
     super({
-      log: process.env.NODE_ENV === 'development' 
-        ? ['query', 'info', 'warn', 'error']
-        : ['error'],
+      log:
+        process.env.NODE_ENV === 'development'
+          ? ['query', 'info', 'warn', 'error']
+          : ['error'],
       errorFormat: 'colorless',
     });
   }
@@ -36,11 +45,15 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     try {
       await this.$connect();
       this.logger.log('Successfully connected to PostgreSQL database');
-      
+
       // Log database info in development
       if (process.env.NODE_ENV === 'development') {
-        const result = await this.$queryRaw`SELECT version()` as Array<{ version: string }>;
-        this.logger.debug(`Database version: ${result[0]?.version?.split(' ')[0] || 'Unknown'}`);
+        const result = (await this.$queryRaw`SELECT version()`) as Array<{
+          version: string;
+        }>;
+        this.logger.debug(
+          `Database version: ${result[0]?.version?.split(' ')[0] || 'Unknown'}`,
+        );
       }
     } catch (error) {
       this.logger.error('Failed to connect to database:', error);
@@ -131,7 +144,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         },
       });
 
-      this.logger.log(`Cleaned up ${result.count} soft-deleted records older than ${daysOld} days`);
+      this.logger.log(
+        `Cleaned up ${result.count} soft-deleted records older than ${daysOld} days`,
+      );
       return result.count;
     } catch (error) {
       this.logger.error('Failed to cleanup soft-deleted records:', error);

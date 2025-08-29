@@ -1,6 +1,11 @@
 // prisma/seed.ts
 
-import { PrismaClient, Gender, SupportedCountry, KYCStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  Gender,
+  SupportedCountry,
+  KYCStatus,
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -93,7 +98,10 @@ async function main() {
       data: {
         personId: person.id,
         studentId: `STU${Date.now()}${Math.floor(Math.random() * 1000)}`,
-        collegeName: person.country === 'INDIA' ? 'IIT Mumbai' : 'American University of Dubai',
+        collegeName:
+          person.country === 'INDIA'
+            ? 'IIT Mumbai'
+            : 'American University of Dubai',
         program: 'Computer Science Engineering',
         yearOfStudy: Math.floor(Math.random() * 4) + 1,
         enrollmentDate: new Date('2023-08-01'),

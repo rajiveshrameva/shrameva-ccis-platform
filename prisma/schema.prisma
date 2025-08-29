@@ -3,12 +3,12 @@
 // Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 // ===================================================================
@@ -16,83 +16,83 @@ datasource db {
 // ===================================================================
 
 model Person {
-  // Core Identity
-  id                    String   @id @default(uuid()) @db.Uuid
-  version               Int      @default(1) // Optimistic concurrency control
-  createdAt             DateTime @default(now()) @db.Timestamptz
-  updatedAt             DateTime @updatedAt @db.Timestamptz
-  deletedAt             DateTime? @db.Timestamptz // Soft delete support
+    // Core Identity
+    id        String    @id @default(uuid()) @db.Uuid
+    version   Int       @default(1) // Optimistic concurrency control
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    deletedAt DateTime? @db.Timestamptz // Soft delete support
 
-  // Personal Information
-  firstName             String   @db.VarChar(100)
-  middleName            String?  @db.VarChar(100)
-  lastName              String   @db.VarChar(100)
-  preferredName         String?  @db.VarChar(100)
-  dateOfBirth           DateTime @db.Date
-  gender                Gender
-  
-  // Contact Information
-  email                 String   @unique @db.VarChar(255)
-  emailVerified         Boolean  @default(false)
-  emailVerifiedAt       DateTime? @db.Timestamptz
-  phone                 String   @unique @db.VarChar(20) // International format
-  phoneCountryCode      String   @db.VarChar(5) // e.g., "+91", "+971"
-  phoneVerified         Boolean  @default(false)
-  phoneVerifiedAt       DateTime? @db.Timestamptz
-  
-  // Address Information
-  addressLine1          String?  @db.VarChar(255)
-  addressLine2          String?  @db.VarChar(255)
-  city                  String?  @db.VarChar(100)
-  state                 String?  @db.VarChar(100)
-  postalCode            String?  @db.VarChar(20)
-  country               SupportedCountry?
-  
-  // Verification & Compliance
-  isVerified            Boolean  @default(false)
-  verifiedAt            DateTime? @db.Timestamptz
-  verifiedBy            String?  @db.Uuid // Reference to verifying person
-  kycStatus             KYCStatus @default(PENDING)
-  kycCompletedAt        DateTime? @db.Timestamptz
-  trustScore            Float?   @db.Real // 0.0 to 1.0
-  
-  // Privacy & Preferences
-  privacySettings       Json     @default("{}")
-  profileVisibility     ProfileVisibility @default(PRIVATE)
-  dataSharing           Json     @default("{}") // Granular data sharing preferences
-  
-  // Platform Metadata
-  lastLoginAt           DateTime? @db.Timestamptz
-  profileCompleteness   Int      @default(0) @db.SmallInt // 0-100%
-  onboardingCompleted   Boolean  @default(false)
-  accountStatus         AccountStatus @default(ACTIVE)
-  
-  // Skill Passport (Core Innovation)
-  skillPassport         SkillPassport?
-  
-  // Emergency Contacts
-  emergencyContacts     EmergencyContact[]
-  
-  // Social Profiles
-  socialProfiles        SocialProfile[]
-  
-  // Relations
-  verifier              Person?  @relation("PersonVerifier", fields: [verifiedBy], references: [id])
-  verifiedPersons       Person[] @relation("PersonVerifier")
-  
-  // Student relation (if person is also a student)
-  student               Student?
-  
-  // Indexes for performance
-  @@index([email])
-  @@index([phone])
-  @@index([country, city])
-  @@index([kycStatus])
-  @@index([isVerified])
-  @@index([createdAt])
-  @@index([lastLoginAt])
-  @@index([accountStatus])
-  @@map("persons")
+    // Personal Information
+    firstName     String   @db.VarChar(100)
+    middleName    String?  @db.VarChar(100)
+    lastName      String   @db.VarChar(100)
+    preferredName String?  @db.VarChar(100)
+    dateOfBirth   DateTime @db.Date
+    gender        Gender
+
+    // Contact Information
+    email            String    @unique @db.VarChar(255)
+    emailVerified    Boolean   @default(false)
+    emailVerifiedAt  DateTime? @db.Timestamptz
+    phone            String    @unique @db.VarChar(20) // International format
+    phoneCountryCode String    @db.VarChar(5) // e.g., "+91", "+971"
+    phoneVerified    Boolean   @default(false)
+    phoneVerifiedAt  DateTime? @db.Timestamptz
+
+    // Address Information
+    addressLine1 String?           @db.VarChar(255)
+    addressLine2 String?           @db.VarChar(255)
+    city         String?           @db.VarChar(100)
+    state        String?           @db.VarChar(100)
+    postalCode   String?           @db.VarChar(20)
+    country      SupportedCountry?
+
+    // Verification & Compliance
+    isVerified     Boolean   @default(false)
+    verifiedAt     DateTime? @db.Timestamptz
+    verifiedBy     String?   @db.Uuid // Reference to verifying person
+    kycStatus      KYCStatus @default(PENDING)
+    kycCompletedAt DateTime? @db.Timestamptz
+    trustScore     Float?    @db.Real // 0.0 to 1.0
+
+    // Privacy & Preferences
+    privacySettings   Json              @default("{}")
+    profileVisibility ProfileVisibility @default(PRIVATE)
+    dataSharing       Json              @default("{}") // Granular data sharing preferences
+
+    // Platform Metadata
+    lastLoginAt         DateTime?     @db.Timestamptz
+    profileCompleteness Int           @default(0) @db.SmallInt // 0-100%
+    onboardingCompleted Boolean       @default(false)
+    accountStatus       AccountStatus @default(ACTIVE)
+
+    // Skill Passport (Core Innovation)
+    skillPassport SkillPassport?
+
+    // Emergency Contacts
+    emergencyContacts EmergencyContact[]
+
+    // Social Profiles
+    socialProfiles SocialProfile[]
+
+    // Relations
+    verifier        Person?  @relation("PersonVerifier", fields: [verifiedBy], references: [id])
+    verifiedPersons Person[] @relation("PersonVerifier")
+
+    // Student relation (if person is also a student)
+    student Student?
+
+    // Indexes for performance
+    @@index([email])
+    @@index([phone])
+    @@index([country, city])
+    @@index([kycStatus])
+    @@index([isVerified])
+    @@index([createdAt])
+    @@index([lastLoginAt])
+    @@index([accountStatus])
+    @@map("persons")
 }
 
 // ===================================================================
@@ -100,62 +100,62 @@ model Person {
 // ===================================================================
 
 model SkillPassport {
-  id                    String   @id @default(uuid()) @db.Uuid
-  personId              String   @unique @db.Uuid
-  person                Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
-  // Metadata
-  createdAt             DateTime @default(now()) @db.Timestamptz
-  updatedAt             DateTime @updatedAt @db.Timestamptz
-  version               Int      @default(1)
-  
-  // CCIS Framework - 7 Core Competencies
-  communicationLevel    Int      @default(1) @db.SmallInt // 1-4 CCIS levels
-  communicationEvidence Json     @default("[]")
-  communicationLastAssessed DateTime? @db.Timestamptz
-  
-  problemSolvingLevel   Int      @default(1) @db.SmallInt
-  problemSolvingEvidence Json    @default("[]")
-  problemSolvingLastAssessed DateTime? @db.Timestamptz
-  
-  teamworkLevel         Int      @default(1) @db.SmallInt
-  teamworkEvidence      Json     @default("[]")
-  teamworkLastAssessed  DateTime? @db.Timestamptz
-  
-  adaptabilityLevel     Int      @default(1) @db.SmallInt
-  adaptabilityEvidence  Json     @default("[]")
-  adaptabilityLastAssessed DateTime? @db.Timestamptz
-  
-  timeManagementLevel   Int      @default(1) @db.SmallInt
-  timeManagementEvidence Json    @default("[]")
-  timeManagementLastAssessed DateTime? @db.Timestamptz
-  
-  technicalSkillsLevel  Int      @default(1) @db.SmallInt
-  technicalSkillsEvidence Json   @default("[]")
-  technicalSkillsLastAssessed DateTime? @db.Timestamptz
-  
-  leadershipLevel       Int      @default(1) @db.SmallInt
-  leadershipEvidence    Json     @default("[]")
-  leadershipLastAssessed DateTime? @db.Timestamptz
-  
-  // Overall CCIS Metrics
-  overallCCISLevel      Float    @default(1.0) @db.Real // Calculated average
-  totalAssessments      Int      @default(0)
-  lastAssessmentDate    DateTime? @db.Timestamptz
-  
-  // International Context
-  assessmentCountry     SupportedCountry?
-  culturalContext       Json     @default("{}")
-  
-  // Sharing & Visibility
-  isPublic              Boolean  @default(false)
-  sharedWith            Json     @default("[]") // Array of institution/employer IDs
-  
-  // Indexes for CCIS queries
-  @@index([overallCCISLevel])
-  @@index([communicationLevel, problemSolvingLevel, teamworkLevel])
-  @@index([lastAssessmentDate])
-  @@map("skill_passports")
+    id       String @id @default(uuid()) @db.Uuid
+    personId String @unique @db.Uuid
+    person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+    // Metadata
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+    version   Int      @default(1)
+
+    // CCIS Framework - 7 Core Competencies
+    communicationLevel        Int       @default(1) @db.SmallInt // 1-4 CCIS levels
+    communicationEvidence     Json      @default("[]")
+    communicationLastAssessed DateTime? @db.Timestamptz
+
+    problemSolvingLevel        Int       @default(1) @db.SmallInt
+    problemSolvingEvidence     Json      @default("[]")
+    problemSolvingLastAssessed DateTime? @db.Timestamptz
+
+    teamworkLevel        Int       @default(1) @db.SmallInt
+    teamworkEvidence     Json      @default("[]")
+    teamworkLastAssessed DateTime? @db.Timestamptz
+
+    adaptabilityLevel        Int       @default(1) @db.SmallInt
+    adaptabilityEvidence     Json      @default("[]")
+    adaptabilityLastAssessed DateTime? @db.Timestamptz
+
+    timeManagementLevel        Int       @default(1) @db.SmallInt
+    timeManagementEvidence     Json      @default("[]")
+    timeManagementLastAssessed DateTime? @db.Timestamptz
+
+    technicalSkillsLevel        Int       @default(1) @db.SmallInt
+    technicalSkillsEvidence     Json      @default("[]")
+    technicalSkillsLastAssessed DateTime? @db.Timestamptz
+
+    leadershipLevel        Int       @default(1) @db.SmallInt
+    leadershipEvidence     Json      @default("[]")
+    leadershipLastAssessed DateTime? @db.Timestamptz
+
+    // Overall CCIS Metrics
+    overallCCISLevel   Float     @default(1.0) @db.Real // Calculated average
+    totalAssessments   Int       @default(0)
+    lastAssessmentDate DateTime? @db.Timestamptz
+
+    // International Context
+    assessmentCountry SupportedCountry?
+    culturalContext   Json              @default("{}")
+
+    // Sharing & Visibility
+    isPublic   Boolean @default(false)
+    sharedWith Json    @default("[]") // Array of institution/employer IDs
+
+    // Indexes for CCIS queries
+    @@index([overallCCISLevel])
+    @@index([communicationLevel, problemSolvingLevel, teamworkLevel])
+    @@index([lastAssessmentDate])
+    @@map("skill_passports")
 }
 
 // ===================================================================
@@ -163,40 +163,40 @@ model SkillPassport {
 // ===================================================================
 
 model EmergencyContact {
-  id            String   @id @default(uuid()) @db.Uuid
-  personId      String   @db.Uuid
-  person        Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
-  name          String   @db.VarChar(200)
-  relationship  String   @db.VarChar(50)
-  phone         String   @db.VarChar(20)
-  email         String?  @db.VarChar(255)
-  isPrimary     Boolean  @default(false)
-  
-  createdAt     DateTime @default(now()) @db.Timestamptz
-  updatedAt     DateTime @updatedAt @db.Timestamptz
-  
-  @@index([personId])
-  @@map("emergency_contacts")
+    id       String @id @default(uuid()) @db.Uuid
+    personId String @db.Uuid
+    person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+    name         String  @db.VarChar(200)
+    relationship String  @db.VarChar(50)
+    phone        String  @db.VarChar(20)
+    email        String? @db.VarChar(255)
+    isPrimary    Boolean @default(false)
+
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+
+    @@index([personId])
+    @@map("emergency_contacts")
 }
 
 model SocialProfile {
-  id            String   @id @default(uuid()) @db.Uuid
-  personId      String   @db.Uuid
-  person        Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
-  platform      SocialPlatform
-  username      String   @db.VarChar(100)
-  profileUrl    String?  @db.VarChar(500)
-  isVerified    Boolean  @default(false)
-  isPublic      Boolean  @default(true)
-  
-  createdAt     DateTime @default(now()) @db.Timestamptz
-  updatedAt     DateTime @updatedAt @db.Timestamptz
-  
-  @@unique([personId, platform])
-  @@index([personId])
-  @@map("social_profiles")
+    id       String @id @default(uuid()) @db.Uuid
+    personId String @db.Uuid
+    person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+    platform   SocialPlatform
+    username   String         @db.VarChar(100)
+    profileUrl String?        @db.VarChar(500)
+    isVerified Boolean        @default(false)
+    isPublic   Boolean        @default(true)
+
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+
+    @@unique([personId, platform])
+    @@index([personId])
+    @@map("social_profiles")
 }
 
 // ===================================================================
@@ -204,53 +204,53 @@ model SocialProfile {
 // ===================================================================
 
 model Student {
-  id                    String   @id @default(uuid()) @db.Uuid
-  personId              String   @unique @db.Uuid
-  person                Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  
-  // Student Identity
-  studentId             String   @unique @db.VarChar(50) // College-assigned ID
-  enrollmentNumber      String?  @unique @db.VarChar(50)
-  
-  // Academic Information
-  collegeName           String   @db.VarChar(200)
-  collegeCode           String?  @db.VarChar(20)
-  program               String   @db.VarChar(100)
-  specialization        String?  @db.VarChar(100)
-  yearOfStudy           Int      @db.SmallInt
-  semester              Int?     @db.SmallInt
-  
-  // Enrollment Details
-  enrollmentDate        DateTime @db.Date
-  expectedGraduationDate DateTime? @db.Date
-  enrollmentStatus      EnrollmentStatus @default(ACTIVE)
-  
-  // Academic Performance
-  currentGPA            Float?   @db.Real
-  totalCredits          Int?     @default(0)
-  completedCredits      Int?     @default(0)
-  
-  // Placement Information
-  placementStatus       PlacementStatus @default(NOT_STARTED)
-  placementTarget       DateTime? @db.Date
-  placementAchieved     Boolean  @default(false)
-  placementDate         DateTime? @db.Date
-  placementCompany      String?  @db.VarChar(200)
-  placementPackage      Float?   @db.Real // Annual package in local currency
-  placementRole         String?  @db.VarChar(100)
-  
-  // Metadata
-  createdAt             DateTime @default(now()) @db.Timestamptz
-  updatedAt             DateTime @updatedAt @db.Timestamptz
-  
-  // Indexes
-  @@index([collegeName])
-  @@index([program])
-  @@index([yearOfStudy])
-  @@index([enrollmentStatus])
-  @@index([placementStatus])
-  @@index([expectedGraduationDate])
-  @@map("students")
+    id       String @id @default(uuid()) @db.Uuid
+    personId String @unique @db.Uuid
+    person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+    // Student Identity
+    studentId        String  @unique @db.VarChar(50) // College-assigned ID
+    enrollmentNumber String? @unique @db.VarChar(50)
+
+    // Academic Information
+    collegeName    String  @db.VarChar(200)
+    collegeCode    String? @db.VarChar(20)
+    program        String  @db.VarChar(100)
+    specialization String? @db.VarChar(100)
+    yearOfStudy    Int     @db.SmallInt
+    semester       Int?    @db.SmallInt
+
+    // Enrollment Details
+    enrollmentDate         DateTime         @db.Date
+    expectedGraduationDate DateTime?        @db.Date
+    enrollmentStatus       EnrollmentStatus @default(ACTIVE)
+
+    // Academic Performance
+    currentGPA       Float? @db.Real
+    totalCredits     Int?   @default(0)
+    completedCredits Int?   @default(0)
+
+    // Placement Information
+    placementStatus   PlacementStatus @default(NOT_STARTED)
+    placementTarget   DateTime?       @db.Date
+    placementAchieved Boolean         @default(false)
+    placementDate     DateTime?       @db.Date
+    placementCompany  String?         @db.VarChar(200)
+    placementPackage  Float?          @db.Real // Annual package in local currency
+    placementRole     String?         @db.VarChar(100)
+
+    // Metadata
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+
+    // Indexes
+    @@index([collegeName])
+    @@index([program])
+    @@index([yearOfStudy])
+    @@index([enrollmentStatus])
+    @@index([placementStatus])
+    @@index([expectedGraduationDate])
+    @@map("students")
 }
 
 // ===================================================================
@@ -258,67 +258,67 @@ model Student {
 // ===================================================================
 
 enum Gender {
-  MALE
-  FEMALE
-  NON_BINARY
-  PREFER_NOT_TO_SAY
-  OTHER
+    MALE
+    FEMALE
+    NON_BINARY
+    PREFER_NOT_TO_SAY
+    OTHER
 }
 
 enum SupportedCountry {
-  INDIA
-  UAE
+    INDIA
+    UAE
 }
 
 enum KYCStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  REJECTED
-  EXPIRED
+    PENDING
+    IN_PROGRESS
+    COMPLETED
+    REJECTED
+    EXPIRED
 }
 
 enum ProfileVisibility {
-  PUBLIC
-  PRIVATE
-  CONTACTS_ONLY
-  INSTITUTIONS_ONLY
+    PUBLIC
+    PRIVATE
+    CONTACTS_ONLY
+    INSTITUTIONS_ONLY
 }
 
 enum AccountStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-  DEACTIVATED
-  PENDING_VERIFICATION
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+    DEACTIVATED
+    PENDING_VERIFICATION
 }
 
 enum SocialPlatform {
-  LINKEDIN
-  GITHUB
-  TWITTER
-  INSTAGRAM
-  FACEBOOK
-  PORTFOLIO_WEBSITE
-  OTHER
+    LINKEDIN
+    GITHUB
+    TWITTER
+    INSTAGRAM
+    FACEBOOK
+    PORTFOLIO_WEBSITE
+    OTHER
 }
 
 enum EnrollmentStatus {
-  ACTIVE
-  INACTIVE
-  GRADUATED
-  DROPPED_OUT
-  TRANSFERRED
-  SUSPENDED
-  ON_BREAK
+    ACTIVE
+    INACTIVE
+    GRADUATED
+    DROPPED_OUT
+    TRANSFERRED
+    SUSPENDED
+    ON_BREAK
 }
 
 enum PlacementStatus {
-  NOT_STARTED
-  PREPARING
-  APPLYING
-  INTERVIEWING
-  OFFER_RECEIVED
-  PLACED
-  NOT_INTERESTED
+    NOT_STARTED
+    PREPARING
+    APPLYING
+    INTERVIEWING
+    OFFER_RECEIVED
+    PLACED
+    NOT_INTERESTED
 }
