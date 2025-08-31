@@ -10,6 +10,20 @@ import { CompetencyType } from '../value-objects/competency-type.value-object';
 import { BehavioralSignals } from '../value-objects/behavioral-signals.value-object';
 import { DomainEvent } from '../../../../shared/base/domain-event.base';
 
+// Import Assessment Domain Services
+import { CCISCalculationService } from '../services/ccis-calculation.service';
+import {
+  GamingDetectionService,
+  GamingAnalysisResult,
+  GamingRiskLevel,
+} from '../services/gaming-detection.service';
+import {
+  ScaffoldingAdjustmentService,
+  ScaffoldingConfiguration,
+  PerformanceIndicators,
+  CulturalContext,
+} from '../services/scaffolding-adjustment.service';
+
 // TODO: Import domain events once created
 // import { AssessmentSessionStarted } from '../events/assessment-session-started.event';
 // import { AssessmentSessionCompleted } from '../events/assessment-session-completed.event';
@@ -196,6 +210,16 @@ export class AssessmentSession extends AggregateRoot<AssessmentID> {
   private _gamingPatternDetected: boolean = false;
   private _gamingDetectionHistory: Date[] = [];
 
+  // Integrated Assessment Services
+  private _gamingAnalysisResults: GamingAnalysisResult[] = [];
+  private _currentScaffoldingConfiguration?: ScaffoldingConfiguration;
+  private _scaffoldingAdjustmentHistory: Array<{
+    timestamp: Date;
+    reason: string;
+    previousConfig?: ScaffoldingConfiguration;
+    newConfig: ScaffoldingConfiguration;
+  }> = [];
+
   // Session analytics
   private _sessionAnalytics: SessionAnalytics;
 
@@ -316,27 +340,27 @@ export class AssessmentSession extends AggregateRoot<AssessmentID> {
       return;
     }
 
-    // Calculate weighted average of all signals
-    const totalWeight = this._behavioralSignals.length;
-    let weightedSum = 0;
-    let confidenceSum = 0;
+    const previousLevel = this._currentCCISLevel;
 
-    for (const signals of this._behavioralSignals) {
-      const signalScore = signals.calculateWeightedScore();
-      const signalConfidence = signals.getAssessmentConfidence();
+    // Use CCIS Calculation Service for precise calculation
+    const latestSignals =
+      this._behavioralSignals[this._behavioralSignals.length - 1];
+    const ccisResult = CCISCalculationService.calculateCCISLevel(latestSignals);
 
-      weightedSum += signalScore * signalConfidence;
-      confidenceSum += signalConfidence;
+    // Update current CCIS level and confidence
+    this._currentCCISLevel = ccisResult.ccisLevel;
+    this._overallConfidence = ccisResult.confidence;
+
+    // Check for gaming patterns using our Gaming Detection Service
+    const gamingResult = this.analyzeGamingPatterns();
+    if (gamingResult.riskLevel !== GamingRiskLevel.NONE) {
+      this._gamingPatternDetected = true;
+      this._gamingAnalysisResults.push(gamingResult);
+      this._gamingDetectionHistory.push(new Date());
     }
 
-    // Calculate overall weighted score
-    const overallScore = weightedSum / confidenceSum;
-    const overallConfidence = confidenceSum / totalWeight;
-
-    // Update current CCIS level
-    const previousLevel = this._currentCCISLevel;
-    this._currentCCISLevel = CCISLevel.fromPercentage(overallScore * 100);
-    this._overallConfidence = ConfidenceScore.fromValue(overallConfidence);
+    // Update competency-specific analytics
+    this.updateSessionAnalytics(latestSignals);
 
     // TODO: Check if CCIS level has changed and publish event
     // if (!previousLevel.equals(this._currentCCISLevel)) {
@@ -355,12 +379,68 @@ export class AssessmentSession extends AggregateRoot<AssessmentID> {
   }
 
   /**
+   * Analyze gaming patterns using Gaming Detection Service
+   */
+  private analyzeGamingPatterns(): GamingAnalysisResult {
+    if (this._behavioralSignals.length === 0) {
+      // Return no-risk result for empty signals
+      return {
+        sessionId: this.getId().toString(),
+        riskLevel: GamingRiskLevel.NONE,
+        overallRiskScore: 0,
+        detectedPatterns: [],
+        statisticalAnomalies: [],
+        recommendedAction: 'NO_ACTION' as any,
+        interventionPriority: 'LOW',
+        humanReviewRequired: false,
+        analysisTimestamp: new Date(),
+      };
+    }
+
+    // Prepare gaming detection input
+    const latestSignals =
+      this._behavioralSignals[this._behavioralSignals.length - 1];
+    const timingPattern = this._behavioralSignals.map(
+      () => Math.random() * 120 + 30,
+    ); // Placeholder timing
+    const hintPattern = this._behavioralSignals.map(() =>
+      Math.floor(Math.random() * 5),
+    ); // Placeholder hints
+    const errorPattern = this._behavioralSignals.map(() =>
+      Math.floor(Math.random() * 3),
+    ); // Placeholder errors
+
+    const gamingInput = {
+      sessionId: this.getId().toString(),
+      personId: this.personId.toString(),
+      competencyType: this.competencyType,
+      currentSignals: latestSignals,
+      sessionDuration: this.getSessionDurationMinutes(),
+      taskCount: this._behavioralSignals.length,
+      hintUsagePattern: hintPattern,
+      errorPattern: errorPattern,
+      timingPattern: timingPattern,
+      environmentMetadata: {
+        deviceType: 'desktop' as const,
+        networkStability: 'good' as const,
+        timeOfDay: new Date().getHours(),
+      },
+    };
+
+    return GamingDetectionService.analyzeSession(gamingInput);
+  }
+
+  /**
    * Check for gaming patterns in behavioral signals
    */
   private checkForGamingPatterns(newSignals: BehavioralSignals): void {
-    // Check individual signal gaming
-    if (newSignals.detectsGaming()) {
+    // Use our comprehensive Gaming Detection Service
+    const gamingResult = this.analyzeGamingPatterns();
+
+    // Update gaming status based on analysis
+    if (gamingResult.riskLevel !== GamingRiskLevel.NONE) {
       this._gamingPatternDetected = true;
+      this._gamingAnalysisResults.push(gamingResult);
       this._gamingDetectionHistory.push(new Date());
 
       // TODO: Publish gaming detected event
@@ -369,39 +449,109 @@ export class AssessmentSession extends AggregateRoot<AssessmentID> {
       //     this.getId(),
       //     this.personId,
       //     this.competencyType,
-      //     'INDIVIDUAL_SIGNAL_GAMING',
+      //     gamingResult.detectedPatterns[0]?.patternType || 'GENERAL_GAMING',
       //     newSignals,
       //     new Date()
       //   )
       // );
 
-      // Trigger gaming intervention
-      this.triggerIntervention(InterventionType.GAMING_INTERVENTION);
-    }
+      // Trigger appropriate interventions based on risk level
+      if (
+        gamingResult.riskLevel === GamingRiskLevel.HIGH ||
+        gamingResult.riskLevel === GamingRiskLevel.CRITICAL
+      ) {
+        this.triggerIntervention(InterventionType.GAMING_INTERVENTION);
 
-    // Check pattern-based gaming (inconsistent signal patterns)
-    if (this._behavioralSignals.length >= 5) {
-      const recentSignals = this._behavioralSignals.slice(-5);
-      const scoreVariance = this.calculateSignalVariance(recentSignals);
-
-      // High variance might indicate gaming
-      if (scoreVariance > 0.3) {
-        this._gamingPatternDetected = true;
-        this._gamingDetectionHistory.push(new Date());
-
-        // TODO: Publish gaming detected event
-        // this.addDomainEvent(
-        //   new GamingDetected(
-        //     this.getId(),
-        //     this.personId,
-        //     this.competencyType,
-        //     'PATTERN_INCONSISTENCY',
-        //     newSignals,
-        //     new Date()
-        //   )
-        // );
+        // Adjust scaffolding for gaming response
+        this.adjustScaffoldingForGaming(gamingResult);
       }
     }
+  }
+
+  /**
+   * Adjust scaffolding configuration in response to gaming detection
+   */
+  private adjustScaffoldingForGaming(gamingResult: GamingAnalysisResult): void {
+    if (!this._currentScaffoldingConfiguration) {
+      // Initialize with default scaffolding if not set
+      this.initializeScaffoldingConfiguration();
+    }
+
+    // Use Scaffolding Adjustment Service to create gaming response
+    const scaffoldingAdjustment = ScaffoldingAdjustmentService.adjustForGaming(
+      this._currentScaffoldingConfiguration!,
+      gamingResult,
+    );
+
+    // Apply the new scaffolding configuration
+    const previousConfig = this._currentScaffoldingConfiguration;
+    this._currentScaffoldingConfiguration =
+      scaffoldingAdjustment.newConfiguration;
+
+    // Record the adjustment in history
+    this._scaffoldingAdjustmentHistory.push({
+      timestamp: new Date(),
+      reason: `Gaming detected: ${gamingResult.riskLevel}`,
+      previousConfig,
+      newConfig: scaffoldingAdjustment.newConfiguration,
+    });
+  }
+
+  /**
+   * Initialize scaffolding configuration based on current CCIS level
+   */
+  private initializeScaffoldingConfiguration(): void {
+    // Create performance indicators for scaffolding optimization
+    const performanceIndicators: PerformanceIndicators = {
+      currentCCISLevel: this._currentCCISLevel,
+      targetCCISLevel: CCISLevel.fromLevel(
+        Math.min(this._currentCCISLevel.getLevel() + 1, 4),
+      ),
+      competencyType: this.competencyType,
+      currentSignals:
+        this._behavioralSignals[this._behavioralSignals.length - 1] ||
+        BehavioralSignals.create({
+          hintRequestFrequency: 0.5,
+          errorRecoverySpeed: 0.5,
+          transferSuccessRate: 0.5,
+          metacognitiveAccuracy: 0.5,
+          taskCompletionEfficiency: 0.5,
+          helpSeekingQuality: 0.5,
+          selfAssessmentAlignment: 0.5,
+          assessmentDuration: 30, // Default 30 minutes
+          taskCount: 1, // Default single task
+        }),
+      recentPerformanceTrend: 'stable',
+      frustrationLevel: 0.3,
+      confidenceLevel: this._overallConfidence.getScore(),
+      engagementLevel: 0.7,
+      learningVelocity:
+        this._signalCollectionCount /
+        Math.max(this.getSessionDurationMinutes() / 60, 0.1),
+      errorRecoveryRate: 0.7,
+      helpSeekingEfficiency: 0.6,
+      timePressure: 0.3,
+    };
+
+    // Default cultural context (could be parameterized)
+    const culturalContext: CulturalContext = {
+      region: 'GLOBAL',
+      languagePreference: 'en',
+      educationalBackground: 'mixed',
+      technicalFamiliarity: 'medium',
+      learningStyle: 'collaborative',
+      communicationPreference: 'adaptive',
+    };
+
+    // Calculate optimal scaffolding
+    const optimizationResult =
+      ScaffoldingAdjustmentService.calculateOptimalScaffolding(
+        performanceIndicators,
+        culturalContext,
+      );
+
+    this._currentScaffoldingConfiguration =
+      optimizationResult.recommendedConfiguration;
   }
 
   /**
@@ -615,6 +765,27 @@ export class AssessmentSession extends AggregateRoot<AssessmentID> {
 
   public get sessionAnalytics(): SessionAnalytics {
     return { ...this._sessionAnalytics };
+  }
+
+  public get gamingAnalysisResults(): readonly GamingAnalysisResult[] {
+    return [...this._gamingAnalysisResults];
+  }
+
+  public get currentScaffoldingConfiguration():
+    | ScaffoldingConfiguration
+    | undefined {
+    return this._currentScaffoldingConfiguration
+      ? { ...this._currentScaffoldingConfiguration }
+      : undefined;
+  }
+
+  public get scaffoldingAdjustmentHistory(): ReadonlyArray<{
+    timestamp: Date;
+    reason: string;
+    previousConfig?: ScaffoldingConfiguration;
+    newConfig: ScaffoldingConfiguration;
+  }> {
+    return [...this._scaffoldingAdjustmentHistory];
   }
 
   /**

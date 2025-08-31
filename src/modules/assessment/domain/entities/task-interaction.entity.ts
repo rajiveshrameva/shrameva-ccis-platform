@@ -563,15 +563,38 @@ export class TaskInteraction extends Entity<TaskID> {
   }
 
   private calculateTransferSuccess(): number {
-    // TODO: Implement transfer success calculation based on task complexity
-    // For now, use error recovery and hint usage as proxy
+    // Calculate transfer success based on multiple indicators
+    // High transfer success = applying prior knowledge effectively
+
+    // Factor 1: Error recovery (good transfer means fewer errors)
     const errorScore =
       this._errorRecoveries.length === 0
         ? 1
-        : Math.max(0, 1 - this._errorRecoveries.length / 3);
-    const hintScore = Math.max(0, 1 - this._hintRequests.length / 5);
+        : Math.max(0, 1 - this._errorRecoveries.length / 10); // Normalize by max expected errors
 
-    return (errorScore + hintScore) / 2;
+    // Factor 2: Hint dependency (good transfer means less hint reliance)
+    const hintScore =
+      this._hintRequests.length === 0
+        ? 1
+        : Math.max(0, 1 - this._hintRequests.length / 5); // Normalize by max expected hints
+
+    // Factor 3: Task completion efficiency (good transfer means faster, more confident completion)
+    const efficiencyScore = this.calculateEfficiency();
+
+    // Factor 4: Quality of help requests (strategic vs desperate help seeking)
+    const helpQualityScore =
+      this._hintRequests.length === 0
+        ? 1
+        : this._hintRequests.filter((h) => h.strategicRequest).length /
+          this._hintRequests.length;
+
+    // Weighted combination emphasizing error recovery and efficiency
+    return (
+      errorScore * 0.4 + // 40% - Error avoidance through prior knowledge
+      hintScore * 0.3 + // 30% - Independence from hints
+      efficiencyScore * 0.2 + // 20% - Efficient application
+      helpQualityScore * 0.1 // 10% - Strategic help seeking
+    );
   }
 
   private calculateMetacognitiveAccuracy(): number {
@@ -589,12 +612,36 @@ export class TaskInteraction extends Entity<TaskID> {
   private calculateEfficiency(): number {
     if (!this._duration) return 0;
 
-    // TODO: Calculate efficiency based on optimal task completion time
-    // For now, use duration and scaffolding level as proxy
+    // Calculate efficiency based on multiple factors
+    // Efficiency = completing task well within reasonable time with minimal rework
+
     const durationMinutes = this._duration / (1000 * 60);
     const expectedDuration = this.getExpectedDuration();
 
-    return Math.max(0, Math.min(1, expectedDuration / durationMinutes));
+    // Factor 1: Time efficiency (completing within expected time)
+    const timeEfficiency = Math.max(
+      0,
+      Math.min(1, expectedDuration / durationMinutes),
+    );
+
+    // Factor 2: Error efficiency (fewer errors = higher efficiency)
+    const errorEfficiency = Math.max(0, 1 - this._errorRecoveries.length / 5); // Normalize by 5 max errors
+
+    // Factor 3: Hint efficiency (less help needed = higher efficiency)
+    const hintEfficiency = Math.max(0, 1 - this._hintRequests.length / 3); // Normalize by 3 max hints
+
+    // Factor 4: Rework efficiency (less revisions = higher efficiency)
+    const reworkEfficiency = (this.metadata as any)?.revisionCount
+      ? Math.max(0, 1 - (this.metadata as any).revisionCount / 4) // Normalize by 4 max revisions
+      : 1;
+
+    // Weighted combination emphasizing time and error efficiency
+    return (
+      timeEfficiency * 0.4 + // 40% - Time management
+      errorEfficiency * 0.3 + // 30% - Error avoidance
+      hintEfficiency * 0.2 + // 20% - Independence
+      reworkEfficiency * 0.1 // 10% - Quality of work
+    );
   }
 
   private calculateHelpSeekingQuality(): number {
