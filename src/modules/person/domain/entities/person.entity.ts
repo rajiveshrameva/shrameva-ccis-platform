@@ -82,6 +82,9 @@ export interface PersonProps {
   /** Consent and privacy preferences */
   privacySettings: PrivacySettings;
 
+  /** Version number for optimistic concurrency control */
+  version: number;
+
   /** Account creation timestamp */
   createdAt: Date;
 
@@ -466,13 +469,19 @@ export class Person extends AggregateRoot<PersonID> {
   /**
    * Creates a new Person instance
    */
-  public static create(
+  public static async create(
     props: Omit<
       PersonProps,
-      'id' | 'createdAt' | 'updatedAt' | 'status' | 'isVerified' | 'kycStatus'
+      | 'id'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'status'
+      | 'isVerified'
+      | 'kycStatus'
+      | 'version'
     >,
-  ): Person {
-    const personId = PersonID.generate();
+  ): Promise<Person> {
+    const personId = await PersonID.generate();
     const now = new Date();
 
     const personProps: PersonProps = {
@@ -481,6 +490,7 @@ export class Person extends AggregateRoot<PersonID> {
       isVerified: false,
       kycStatus: KYCStatus.NOT_STARTED,
       status: PersonStatus.PENDING_VERIFICATION,
+      version: 1, // Initial version
       createdAt: now,
       updatedAt: now,
     };
@@ -753,19 +763,31 @@ export class Person extends AggregateRoot<PersonID> {
   }
 
   /**
-   * Updates person's basic information
+   * Updates person's basic information with optimistic concurrency control
    */
-  public updateBasicInfo(updates: {
-    name?: PersonName;
-    bio?: string;
-    profilePictureUrl?: string;
-    preferredLanguage?: PreferredLanguage;
-    timezone?: string;
-  }): void {
+  public updateBasicInfo(
+    updates: {
+      name?: PersonName;
+      bio?: string;
+      profilePictureUrl?: string;
+      preferredLanguage?: PreferredLanguage;
+      timezone?: string;
+    },
+    expectedVersion: number,
+  ): void {
+    // Check for version conflict (optimistic concurrency control)
+    if (this._props.version !== expectedVersion) {
+      throw new BusinessRuleException(
+        `Version conflict: Expected version ${expectedVersion}, but current version is ${this._props.version}. The entity has been modified by another process.`,
+        'version',
+      );
+    }
+
     const updatedProps = {
       ...this._props,
       ...updates,
       updatedAt: new Date(),
+      version: this._props.version + 1, // Increment version for optimistic concurrency control
     };
 
     // Validate the updates
@@ -780,6 +802,7 @@ export class Person extends AggregateRoot<PersonID> {
         personId: this.id.getValue(),
         updatedFields: Object.keys(updates),
         updatedAt: this._props.updatedAt,
+        version: this._props.version,
       }),
     );
   }
@@ -841,6 +864,7 @@ export class Person extends AggregateRoot<PersonID> {
         personId: this.id.getValue(),
         updatedFields: ['primaryAddress'],
         updatedAt: this._props.updatedAt,
+        version: this._props.version,
       }),
     );
   }
@@ -897,7 +921,7 @@ export class Person extends AggregateRoot<PersonID> {
    * Creates a skill passport for this person
    * This is the core innovation of Shrameva platform
    */
-  public createSkillPassport(): void {
+  public async createSkillPassport(): Promise<void> {
     if (this.skillPassport) {
       throw new BusinessRuleException(
         'Person already has a skill passport',
@@ -905,7 +929,7 @@ export class Person extends AggregateRoot<PersonID> {
       );
     }
 
-    const passportId = PersonID.generate();
+    const passportId = await PersonID.generate();
     const now = new Date();
 
     // Initialize competency levels for all 7 core competencies

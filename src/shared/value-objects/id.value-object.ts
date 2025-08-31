@@ -2,7 +2,6 @@ import {
   ValueObject,
   ValueObjectValidationError,
 } from '../base/value-object.base';
-import { nanoid } from 'nanoid';
 
 /**
  * Base ID Value Object - Strongly-typed entity identifiers using CID format
@@ -36,7 +35,8 @@ export abstract class ID extends ValueObject<string> {
    * Create new ID with generated CID
    * Each concrete ID type must override this method
    */
-  protected static generateCID(): string {
+  protected static async generateCID(): Promise<string> {
+    const { nanoid } = await import('nanoid');
     return `${ID.CID_PREFIX}${nanoid(ID.NANOID_LENGTH)}`;
   }
 
@@ -74,7 +74,8 @@ export abstract class ID extends ValueObject<string> {
    * Generate new CID using nanoid
    * Format: cid_[21-character-nanoid]
    */
-  protected static generateCIDValue(): string {
+  protected static async generateCIDValue(): Promise<string> {
+    const { nanoid } = await import('nanoid');
     return `${ID.CID_PREFIX}${nanoid(ID.NANOID_LENGTH)}`;
   }
 
@@ -173,8 +174,9 @@ export class StudentID extends ID {
     super(value);
   }
 
-  public static generate(): StudentID {
-    return new StudentID(this.generateCIDValue());
+  public static async generate(): Promise<StudentID> {
+    const value = await this.generateCIDValue();
+    return new StudentID(value);
   }
 
   public static fromString(value: string): StudentID {
@@ -200,8 +202,9 @@ export class AssessmentID extends ID {
     super(value);
   }
 
-  public static generate(): AssessmentID {
-    return new AssessmentID(this.generateCIDValue());
+  public static async generate(): Promise<AssessmentID> {
+    const value = await this.generateCIDValue();
+    return new AssessmentID(value);
   }
 
   public static fromString(value: string): AssessmentID {
@@ -226,8 +229,9 @@ export class TaskID extends ID {
     super(value);
   }
 
-  public static generate(): TaskID {
-    return new TaskID(this.generateCIDValue());
+  public static async generate(): Promise<TaskID> {
+    const value = await this.generateCIDValue();
+    return new TaskID(value);
   }
 
   public static fromString(value: string): TaskID {
@@ -245,8 +249,9 @@ export class CollegeID extends ID {
     super(value);
   }
 
-  public static generate(): CollegeID {
-    return new CollegeID(this.generateCIDValue());
+  public static async generate(): Promise<CollegeID> {
+    const value = await this.generateCIDValue();
+    return new CollegeID(value);
   }
 
   public static fromString(value: string): CollegeID {
@@ -271,8 +276,9 @@ export class EmployerID extends ID {
     super(value);
   }
 
-  public static generate(): EmployerID {
-    return new EmployerID(this.generateCIDValue());
+  public static async generate(): Promise<EmployerID> {
+    const value = await this.generateCIDValue();
+    return new EmployerID(value);
   }
 
   public static fromString(value: string): EmployerID {
@@ -297,8 +303,9 @@ export class UserID extends ID {
     super(value);
   }
 
-  public static generate(): UserID {
-    return new UserID(this.generateCIDValue());
+  public static async generate(): Promise<UserID> {
+    const value = await this.generateCIDValue();
+    return new UserID(value);
   }
 
   public static fromString(value: string): UserID {
@@ -316,8 +323,9 @@ export class CCISAssessmentID extends ID {
     super(value);
   }
 
-  public static generate(): CCISAssessmentID {
-    return new CCISAssessmentID(this.generateCIDValue());
+  public static async generate(): Promise<CCISAssessmentID> {
+    const value = await this.generateCIDValue();
+    return new CCISAssessmentID(value);
   }
 
   public static fromString(value: string): CCISAssessmentID {
@@ -342,8 +350,9 @@ export class PersonID extends ID {
     super(value);
   }
 
-  public static generate(): PersonID {
-    return new PersonID(this.generateCIDValue());
+  public static async generate(): Promise<PersonID> {
+    const value = await this.generateCIDValue();
+    return new PersonID(value);
   }
 
   public static fromString(value: string): PersonID {
@@ -356,5 +365,32 @@ export class PersonID extends ID {
    */
   public toProfileURL(): string {
     return `/persons/${this.getValue()}`;
+  }
+}
+
+/**
+ * Competency Assessment identifier
+ * Example: cid_5n8q1t4w7z0c3f6i9l2o5r
+ * Used to track individual competency assessment progress
+ */
+export class CompetencyAssessmentID extends ID {
+  private constructor(value: string) {
+    super(value);
+  }
+
+  public static async generate(): Promise<CompetencyAssessmentID> {
+    const value = await this.generateCIDValue();
+    return new CompetencyAssessmentID(value);
+  }
+
+  public static fromString(value: string): CompetencyAssessmentID {
+    return new CompetencyAssessmentID(value);
+  }
+
+  /**
+   * Create competency assessment details URL
+   */
+  public toDetailsURL(): string {
+    return `/competency-assessments/${this.getValue()}/details`;
   }
 }

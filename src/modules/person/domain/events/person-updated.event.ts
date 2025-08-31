@@ -17,6 +17,9 @@ export interface PersonUpdatedEventProps {
 
   /** Timestamp when person was updated */
   updatedAt: Date;
+
+  /** New version after update (for optimistic concurrency control) */
+  version: number;
 }
 
 export class PersonUpdatedEvent extends DomainEvent {
@@ -33,6 +36,7 @@ export class PersonUpdatedEvent extends DomainEvent {
       personId: this.payload.personId,
       updatedFields: this.payload.updatedFields,
       updatedAt: this.payload.updatedAt.toISOString(),
+      version: this.payload.version,
     };
   }
 }
