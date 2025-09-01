@@ -153,4 +153,101 @@ export class PrismaService
       throw error;
     }
   }
+
+  /**
+   * Create stub model for compilation purposes
+   * TODO: Remove when Prisma generates actual models with assessment entities
+   */
+  private createModelStub(modelName: string) {
+    return {
+      create: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.create called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      findUnique: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.findUnique called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      findFirst: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.findFirst called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      findMany: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.findMany called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      update: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.update called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      updateMany: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.updateMany called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      delete: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.delete called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      deleteMany: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.deleteMany called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      count: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.count called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      aggregate: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.aggregate called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+      groupBy: async (args: any) => {
+        this.logger.warn(
+          `STUB: ${modelName}.groupBy called - Prisma client not yet generated`,
+        );
+        throw new Error(
+          `${modelName} model not yet implemented - run 'npx prisma generate' after schema migration`,
+        );
+      },
+    };
+  }
 }

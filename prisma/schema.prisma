@@ -83,6 +83,11 @@ model Person {
     // Student relation (if person is also a student)
     student Student?
 
+    // Assessment relations
+    assessmentSessions    AssessmentSession[]
+    taskInteractions      TaskInteraction[]
+    competencyAssessments CompetencyAssessment[]
+
     // Indexes for performance
     @@index([email])
     @@index([phone])
@@ -321,4 +326,261 @@ enum PlacementStatus {
     OFFER_RECEIVED
     PLACED
     NOT_INTERESTED
+}
+
+// ===================================================================
+// ASSESSMENT DOMAIN SCHEMA
+// ===================================================================
+
+model AssessmentSession {
+    // Primary identifiers
+    id       String @id @default(uuid()) @db.Uuid
+    personId String @db.Uuid
+
+    // Session configuration
+    competencyType String // COMMUNICATION, PROBLEM_SOLVING, etc.
+    sessionType    String @default("FORMATIVE") // FORMATIVE, SUMMATIVE, DIAGNOSTIC, REMEDIATION
+    status         String @default("PLANNED") // PLANNED, IN_PROGRESS, PAUSED, COMPLETED, TERMINATED, CANCELLED
+
+    // Temporal data
+    startTime      DateTime  @db.Timestamptz
+    endTime        DateTime? @db.Timestamptz
+    maxDuration    Int // minutes
+    actualDuration Int? // minutes
+
+    // Assessment context
+    culturalContext    String @default("INDIA") // INDIA, UAE, GLOBAL
+    languagePreference String @default("english")
+    accessibilityNeeds Json   @default("[]")
+
+    // Assessment configuration
+    assessmentPurpose      String?
+    difficultyLevel        Int     @default(5) // 1-10 scale
+    adaptiveEnabled        Boolean @default(true)
+    gamingDetectionEnabled Boolean @default(true)
+
+    // Session metadata (JSON)
+    sessionMetadata Json @default("{}")
+
+    // Session progress
+    currentTaskIndex  Int @default(0)
+    totalTasksPlanned Int @default(0)
+    tasksCompleted    Int @default(0)
+
+    // Quality metrics
+    overallDataQuality    Decimal @default(0) @db.Decimal(3, 2)
+    behavioralConsistency Decimal @default(0) @db.Decimal(3, 2)
+    engagementLevel       Decimal @default(0) @db.Decimal(3, 2)
+
+    // Gaming detection
+    gamingRiskScore        Decimal @default(0) @db.Decimal(3, 2)
+    gamingPatternsDetected Json    @default("[]")
+    interventionsTriggered Int     @default(0)
+
+    // Performance metrics
+    averageTaskDuration Decimal? @db.Decimal(8, 2)
+    averageQualityScore Decimal? @db.Decimal(3, 2)
+    totalInteractions   Int      @default(0)
+
+    // CCIS progression
+    initialCcisLevel      Int? // 1-4 scale
+    currentCcisLevel      Int? // 1-4 scale
+    confidenceScore       Decimal? @db.Decimal(3, 2)
+    levelAdvancementCount Int      @default(0)
+
+    // Cultural effectiveness
+    culturalAdaptationScore Decimal? @db.Decimal(3, 2)
+    crossCulturalValidation Boolean  @default(false)
+
+    // Scaffolding and adaptation
+    scaffoldingAdjustments Json @default("[]")
+
+    // Session outcomes
+    outcomeMetrics Json @default("{}")
+
+    // Analytics data
+    analyticsData Json @default("{}")
+
+    // System data
+    processingMetrics Json @default("{}")
+
+    // Audit fields
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    version   Int       @default(1)
+    isDeleted Boolean   @default(false)
+    deletedAt DateTime? @db.Timestamptz
+    deletedBy String?   @db.VarChar(50)
+
+    // Relationships
+    person                Person                 @relation(fields: [personId], references: [id])
+    taskInteractions      TaskInteraction[]
+    competencyAssessments CompetencyAssessment[]
+
+    @@index([personId])
+    @@index([status])
+    @@index([competencyType])
+    @@index([startTime])
+    @@index([culturalContext])
+    @@index([personId, status])
+    @@index([competencyType, startTime])
+    @@map("assessment_sessions")
+}
+
+model TaskInteraction {
+    // Primary identifiers
+    id        String @id @default(uuid()) @db.Uuid
+    sessionId String @db.Uuid
+    personId  String @db.Uuid
+    taskId    String @db.VarChar(50)
+
+    // Interaction context
+    competencyFocus String // COMMUNICATION, PROBLEM_SOLVING, etc.
+    taskType        String // MICRO_TASK, FUSION_TASK, ASSESSMENT_TASK
+    taskDifficulty  Int    @default(5) // 1-10 scale
+
+    // Temporal data
+    interactionTimestamp DateTime  @db.Timestamptz
+    startTime            DateTime  @db.Timestamptz
+    endTime              DateTime? @db.Timestamptz
+    duration             BigInt // milliseconds
+
+    // Interaction data (JSON)
+    interactionData Json @default("{}")
+
+    // Behavioral signals (JSON)
+    behavioralSignals Json @default("{}")
+
+    // Quality metrics (JSON)
+    qualityMetrics Json @default("{}")
+
+    // Contextual factors (JSON)
+    contextualFactors Json @default("{}")
+
+    // Gaming detection data (JSON)
+    gamingDetectionData Json @default("{}")
+
+    // Analysis results (JSON)
+    analysisResults Json @default("{}")
+
+    // Performance metrics (JSON)
+    performanceMetrics Json @default("{}")
+
+    // Intervention data (JSON)
+    interventionData Json @default("{}")
+
+    // System metadata (JSON)
+    systemMetadata Json @default("{}")
+
+    // Computed metrics
+    overallQualityScore       Decimal @default(0) @db.Decimal(3, 2)
+    gamingRiskScore           Decimal @default(0) @db.Decimal(3, 2)
+    learningProgressIndicator Decimal @default(0) @db.Decimal(3, 2)
+    culturalAlignmentScore    Decimal @default(0) @db.Decimal(3, 2)
+
+    // Audit fields
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    version   Int       @default(1)
+    isDeleted Boolean   @default(false)
+    deletedAt DateTime? @db.Timestamptz
+    deletedBy String?   @db.VarChar(50)
+
+    // Relationships
+    assessmentSession AssessmentSession @relation(fields: [sessionId], references: [id])
+    person            Person            @relation(fields: [personId], references: [id])
+
+    @@index([sessionId])
+    @@index([personId])
+    @@index([taskId])
+    @@index([interactionTimestamp])
+    @@index([competencyFocus])
+    @@index([sessionId, interactionTimestamp])
+    @@index([personId, interactionTimestamp])
+    @@map("task_interactions")
+}
+
+model CompetencyAssessment {
+    // Primary identifiers
+    id             String @id @default(uuid()) @db.Uuid
+    sessionId      String @db.Uuid
+    personId       String @db.Uuid
+    competencyType String // COMMUNICATION, PROBLEM_SOLVING, etc.
+
+    // Assessment metadata
+    assessmentDate    DateTime @db.Timestamptz
+    assessmentVersion String   @db.VarChar(20)
+    assessmentMethod  String   @db.VarChar(30) // BEHAVIORAL, TASK_BASED, PORTFOLIO, PEER_REVIEW
+    culturalContext   String // INDIA, UAE, GLOBAL
+
+    // CCIS level data
+    ccisLevel          Int // 1-4 scale
+    previousCcisLevel  Int? // For progression tracking
+    levelConfidence    Decimal @db.Decimal(3, 2)
+    levelJustification String? @db.Text
+
+    // Confidence scoring
+    confidenceScore   Decimal @db.Decimal(3, 2)
+    confidenceFactors Json    @default("{}")
+
+    // Evidence data (JSON)
+    evidenceData Json @default("{}")
+
+    // Competency-specific data (JSON)
+    competencySpecificData Json @default("{}")
+
+    // Progression data (JSON)
+    progressionData Json @default("{}")
+
+    // Cultural adaptation data (JSON)
+    culturalAdaptationData Json @default("{}")
+
+    // Assessment analytics (JSON)
+    assessmentAnalytics Json @default("{}")
+
+    // Intervention and recommendations (JSON)
+    interventionData Json @default("{}")
+
+    // Validation and verification (JSON)
+    validationData Json @default("{}")
+
+    // System metadata (JSON)
+    systemMetadata Json @default("{}")
+
+    // Computed metrics
+    overallCompetencyScore   Decimal @default(0) @db.Decimal(3, 2)
+    competencyStrengthRating Decimal @default(0) @db.Decimal(3, 2)
+    developmentPriorityScore Decimal @default(0) @db.Decimal(3, 2)
+    crossCompetencyImpact    Decimal @default(0) @db.Decimal(3, 2)
+
+    // Quality indicators
+    assessmentReliability Decimal @default(0) @db.Decimal(3, 2)
+    evidenceCompleteness  Decimal @default(0) @db.Decimal(3, 2)
+    validationStrength    Decimal @default(0) @db.Decimal(3, 2)
+    culturalRelevance     Decimal @default(0) @db.Decimal(3, 2)
+
+    // Status and lifecycle
+    assessmentStatus    String  @default("DRAFT") // DRAFT, VALIDATED, APPROVED, SUPERSEDED, ARCHIVED
+    isCurrentAssessment Boolean @default(false)
+    supersededBy        String? @db.VarChar(50)
+
+    // Audit fields
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    version   Int       @default(1)
+    isDeleted Boolean   @default(false)
+    deletedAt DateTime? @db.Timestamptz
+    deletedBy String?   @db.VarChar(50)
+
+    // Relationships
+    assessmentSession AssessmentSession @relation(fields: [sessionId], references: [id])
+    person            Person            @relation(fields: [personId], references: [id])
+
+    @@index([personId])
+    @@index([sessionId])
+    @@index([competencyType])
+    @@index([assessmentDate])
+    @@index([personId, competencyType, isCurrentAssessment])
+    @@index([competencyType, culturalContext])
+    @@map("competency_assessments")
 }

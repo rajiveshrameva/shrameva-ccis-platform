@@ -445,15 +445,43 @@ export class CompetencyType extends ValueObject<CompetencyTypeProps> {
     }
 
     // Validate that weights add up to approximately 1.0 across all competencies
-    const totalWeight = CompetencyType.getAllCompetencies().reduce(
-      (sum, comp) => sum + comp.getIndustryWeight(),
-      0,
-    );
+    // Note: This validation is skipped during static initialization to avoid circular dependencies
+    // It can be called separately using CompetencyType.validateTotalWeights() after initialization
+    // const totalWeight = CompetencyType.getAllCompetencies().reduce(
+    //   (sum, comp) => sum + comp.getIndustryWeight(),
+    //   0,
+    // );
 
-    const epsilon = 0.01; // Allow 1% tolerance
-    if (Math.abs(totalWeight - 1.0) > epsilon) {
-      // Note: This validation only runs when all competencies are loaded
-      // Individual validation doesn't check total sum
+    // const epsilon = 0.01; // Allow 1% tolerance
+    // if (Math.abs(totalWeight - 1.0) > epsilon) {
+    //   // Note: This validation only runs when all competencies are loaded
+    //   // Individual validation doesn't check total sum
+    // }
+  }
+
+  /**
+   * Validate that all competency weights sum to approximately 1.0
+   * This should be called after all static competencies are initialized
+   */
+  public static validateTotalWeights(): void {
+    try {
+      const totalWeight = CompetencyType.getAllCompetencies().reduce(
+        (sum, comp) => sum + comp.getIndustryWeight(),
+        0,
+      );
+
+      const epsilon = 0.01; // Allow 1% tolerance
+      if (Math.abs(totalWeight - 1.0) > epsilon) {
+        console.warn(
+          `CompetencyType weights sum to ${totalWeight.toFixed(3)}, expected ~1.0. ` +
+            'Consider adjusting industry weights for better balance.',
+        );
+      }
+    } catch (error) {
+      // Ignore validation errors during initialization
+      console.debug(
+        'CompetencyType total weight validation skipped during initialization',
+      );
     }
   }
 
