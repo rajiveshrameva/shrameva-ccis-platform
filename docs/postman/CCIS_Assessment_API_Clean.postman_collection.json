@@ -1,0 +1,561 @@
+{
+  "info": {
+    "name": "CCIS Assessment API Collection",
+    "description": "Comprehensive collection for CCIS (Confidence-Competence Independence Scale) Assessment API. This collection covers all endpoints for assessment operations, session management, and analytics.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:1905",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "your-jwt-token-here",
+      "type": "string"
+    },
+    {
+      "key": "personId",
+      "value": "person-123",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "session-789",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "task-456",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        },
+        "description": "Basic health check to verify API is running"
+      },
+      "response": []
+    },
+    {
+      "name": "Assessment Operations",
+      "item": [
+        {
+          "name": "Start Assessment Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personId\": \"{{personId}}\",\n  \"assessmentType\": \"comprehensive\",\n  \"culturalContext\": \"INDIA\",\n  \"languagePreference\": \"en\",\n  \"maxDuration\": 75,\n  \"assessmentPurpose\": \"initial_evaluation\",\n  \"targetCompetencies\": [\"communication\", \"problem_solving\", \"teamwork\"],\n  \"accessibilityNeeds\": [\"extended_time\"],\n  \"metadata\": {\n    \"tags\": [\"new_student\", \"engineering\"],\n    \"priority\": \"normal\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assessment/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "start"]
+            },
+            "description": "Initiates a new CCIS assessment session with adaptive configuration for a specific person."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Task Interaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"taskId\": \"{{taskId}}\",\n  \"interactionType\": \"task_attempt\",\n  \"competencyType\": \"communication\",\n  \"startTime\": \"2025-09-01T10:15:00Z\",\n  \"endTime\": \"2025-09-01T10:22:00Z\",\n  \"duration\": 420000,\n  \"interactionData\": {\n    \"responses\": [\"Comprehensive written response demonstrating clear communication\"],\n    \"completionStatus\": \"completed\",\n    \"qualityIndicators\": {\n      \"accuracy\": 0.85,\n      \"completeness\": 1.0,\n      \"creativity\": 0.7\n    }\n  },\n  \"behavioralSignals\": {\n    \"hintsUsed\": 1,\n    \"errorsCommitted\": 2,\n    \"selfCorrectedErrors\": 1,\n    \"confidencePrediction\": 0.7,\n    \"confidenceActual\": 0.8,\n    \"helpSeekingBehavior\": {\n      \"resourcesAccessed\": [\"help_documentation\"],\n      \"peersConsulted\": false\n    },\n    \"engagementMetrics\": {\n      \"focusTime\": 380000,\n      \"distractionEvents\": 1,\n      \"taskSwitching\": 0\n    }\n  },\n  \"metadata\": {\n    \"taskDifficulty\": \"intermediate\",\n    \"scaffoldingLevel\": 2,\n    \"priorAttempts\": 0,\n    \"culturalContext\": \"INDIA\",\n    \"deviceInfo\": \"Chrome 128 on Windows 11\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assessment/{{sessionId}}/interact",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "{{sessionId}}", "interact"]
+            },
+            "description": "Records detailed task interaction data during an assessment session for real-time CCIS calculation and behavioral analysis."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Assessment Progress",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assessment/person/{{personId}}/progress?timeRange=90d&includeComparative=true&includePredictive=true&includeHistorical=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "person", "{{personId}}", "progress"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "90d",
+                  "description": "Time period for analysis: 30d, 90d, 1y"
+                },
+                {
+                  "key": "includeComparative",
+                  "value": "true",
+                  "description": "Include peer comparisons"
+                },
+                {
+                  "key": "includePredictive",
+                  "value": "true",
+                  "description": "Include predictive analytics"
+                },
+                {
+                  "key": "includeHistorical",
+                  "value": "true",
+                  "description": "Include historical trends"
+                }
+              ]
+            },
+            "description": "Retrieves comprehensive CCIS progress analytics for a specific person with configurable detail levels."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Assessment Session",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assessment/{{sessionId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "{{sessionId}}", "complete"]
+            },
+            "description": "Marks an assessment session as complete and generates final analytics and recommendations."
+          },
+          "response": []
+        }
+      ],
+      "description": "Core assessment operations including starting sessions, submitting interactions, and retrieving progress."
+    },
+    {
+      "name": "Session Management",
+      "item": [
+        {
+          "name": "Pause Assessment Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"technical_difficulty\",\n  \"estimatedResumeTime\": \"2025-09-01T10:30:00Z\",\n  \"metadata\": {\n    \"issueType\": \"network_connectivity\",\n    \"deviceInfo\": \"Chrome 128 on Windows 11\",\n    \"errorCode\": \"NET_ERR_INTERNET_DISCONNECTED\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "pause"]
+            },
+            "description": "Temporarily pauses an active assessment session while preserving all state and progress."
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Assessment Session",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "resume"]
+            },
+            "description": "Resumes a paused assessment session with full state validation and optional adjustments."
+          },
+          "response": []
+        },
+        {
+          "name": "Extend Session Time",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"additionalMinutes\": 15,\n  \"reason\": \"Technical difficulties caused delays\",\n  \"justification\": \"Network issues required session restart\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/extend",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "extend"]
+            },
+            "description": "Extends the duration of an active assessment session with proper justification."
+          },
+          "response": []
+        }
+      ],
+      "description": "Session lifecycle management including pause, resume, extend, and complete operations."
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Individual Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/person/{{personId}}?timeRange=90d&includeComparative=true&includePredictive=true&format=comprehensive",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "person", "{{personId}}"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "90d",
+                  "description": "Time period for analysis"
+                },
+                {
+                  "key": "includeComparative",
+                  "value": "true",
+                  "description": "Include peer comparisons"
+                },
+                {
+                  "key": "includePredictive",
+                  "value": "true",
+                  "description": "Include future projections"
+                },
+                {
+                  "key": "format",
+                  "value": "comprehensive",
+                  "description": "Detail level: summary, detailed, comprehensive"
+                }
+              ]
+            },
+            "description": "Retrieves comprehensive analytics for individual learner progress including learning profiles and performance patterns."
+          },
+          "response": []
+        },
+        {
+          "name": "Custom Analytics Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dimensions\": [\"competency\", \"cultural_context\"],\n  \"metrics\": [\"average_level\", \"completion_rate\", \"confidence_score\"],\n  \"filters\": {\n    \"timeRange\": {\n      \"startDate\": \"2025-01-01T00:00:00Z\",\n      \"endDate\": \"2025-12-31T23:59:59Z\"\n    },\n    \"ageGroup\": \"18-25\",\n    \"institutionType\": \"engineering\"\n  },\n  \"groupBy\": [\"competency\"],\n  \"orderBy\": \"average_level DESC\",\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/analytics/custom",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "custom"]
+            },
+            "description": "Executes custom analytics queries with flexible dimensions, metrics, and filters for advanced reporting."
+          },
+          "response": []
+        },
+        {
+          "name": "Cohort Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/cohort/engineering-2025?includeComparisons=true&includeDistributions=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "cohort", "engineering-2025"],
+              "query": [
+                {
+                  "key": "includeComparisons",
+                  "value": "true",
+                  "description": "Include comparisons with other cohorts"
+                },
+                {
+                  "key": "includeDistributions",
+                  "value": "true",
+                  "description": "Include competency level distributions"
+                }
+              ]
+            },
+            "description": "Retrieves analytics for a specific cohort or group of learners with comparative insights."
+          },
+          "response": []
+        }
+      ],
+      "description": "Analytics endpoints for individual, cohort, and custom data analysis and reporting."
+    },
+    {
+      "name": "Sample User Flows",
+      "item": [
+        {
+          "name": "Complete Assessment Journey",
+          "item": [
+            {
+              "name": "1. Start Assessment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"personId\": \"student-001\",\n  \"assessmentType\": \"comprehensive\",\n  \"culturalContext\": \"INDIA\",\n  \"languagePreference\": \"en\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/assessment/start",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assessment", "start"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Submit Communication Task",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"session-789\",\n  \"taskId\": \"task-001\",\n  \"interactionType\": \"task_attempt\",\n  \"competencyType\": \"communication\",\n  \"interactionData\": {\n    \"responses\": [\"Clear and structured written response\"],\n    \"completionStatus\": \"completed\"\n  },\n  \"behavioralSignals\": {\n    \"hintsUsed\": 0,\n    \"errorsCommitted\": 1,\n    \"confidencePrediction\": 0.8\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/assessment/session-789/interact",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assessment", "session-789", "interact"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Submit Problem Solving Task",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"session-789\",\n  \"taskId\": \"task-002\",\n  \"interactionType\": \"task_attempt\",\n  \"competencyType\": \"problem_solving\",\n  \"interactionData\": {\n    \"responses\": [\"Systematic problem analysis and solution\"],\n    \"completionStatus\": \"completed\"\n  },\n  \"behavioralSignals\": {\n    \"hintsUsed\": 2,\n    \"errorsCommitted\": 0,\n    \"confidencePrediction\": 0.6\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/assessment/session-789/interact",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assessment", "session-789", "interact"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "4. Complete Assessment",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/assessment/session-789/complete",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assessment", "session-789", "complete"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "5. View Final Results",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/assessment/person/student-001/progress?includePredictive=true",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assessment", "person", "student-001", "progress"],
+                  "query": [
+                    {
+                      "key": "includePredictive",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Complete end-to-end assessment journey from start to final results."
+        },
+        {
+          "name": "Session Recovery Flow",
+          "item": [
+            {
+              "name": "1. Assessment in Progress",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"taskId\": \"task-003\",\n  \"interactionType\": \"task_attempt\",\n  \"competencyType\": \"teamwork\",\n  \"interactionData\": {\n    \"responses\": [\"Collaborative solution approach\"],\n    \"completionStatus\": \"in_progress\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/assessment/{{sessionId}}/interact",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["assessment", "{{sessionId}}", "interact"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "2. Pause Due to Technical Issue",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"technical_difficulty\",\n  \"metadata\": {\n    \"issueType\": \"network_connectivity\",\n    \"errorDescription\": \"Connection timeout\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/session/{{sessionId}}/pause",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["session", "{{sessionId}}", "pause"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "3. Resume Session",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/session/{{sessionId}}/resume",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["session", "{{sessionId}}", "resume"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "4. Extend Time if Needed",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"additionalMinutes\": 15,\n  \"reason\": \"Technical difficulties caused delays\",\n  \"justification\": \"Network issues required session restart\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/session/{{sessionId}}/extend",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["session", "{{sessionId}}", "extend"]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Recovery workflow for handling technical issues during assessment sessions."
+        }
+      ],
+      "description": "Pre-configured user flows demonstrating common use cases and scenarios."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set dynamic variables if needed",
+          "if (!pm.collectionVariables.get('personId')) {",
+          "    pm.collectionVariables.set('personId', 'student-' + Math.floor(Math.random() * 1000));",
+          "}",
+          "",
+          "// Log request for debugging",
+          "console.log('Request URL:', pm.request.url.toString());",
+          "console.log('Method:', pm.request.method);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test assertions",
+          "pm.test('Response time is reasonable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "// Log response for debugging",
+          "if (pm.response.code >= 400) {",
+          "    console.log('Error Response:', pm.response.text());",
+          "}"
+        ]
+      }
+    }
+  ]
+}
