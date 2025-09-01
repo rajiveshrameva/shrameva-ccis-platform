@@ -201,9 +201,11 @@ export class InterventionTriggeredHandler
     try {
       // Get person details for student guidance email
       const person = await this.personRepository.findById(event.personId);
-      
+
       if (!person) {
-        console.error(`[INTERVENTION NOTIFICATIONS] Person not found: ${event.personId.getValue()}`);
+        console.error(
+          `[INTERVENTION NOTIFICATIONS] Person not found: ${event.personId.getValue()}`,
+        );
         return;
       }
 
@@ -211,8 +213,11 @@ export class InterventionTriggeredHandler
       const studentName = person.name.fullName;
 
       // Send intervention alert to support team
-      const supportTeamEmails = ['support@shrameva.com', 'intervention@shrameva.com']; // TODO: Get from config
-      
+      const supportTeamEmails = [
+        'support@shrameva.com',
+        'intervention@shrameva.com',
+      ]; // TODO: Get from config
+
       await this.emailService.sendInterventionTriggeredEmail(
         supportTeamEmails,
         {
@@ -222,8 +227,14 @@ export class InterventionTriggeredHandler
         },
         {
           triggerType: event.interventionType,
-          urgencyLevel: event.urgency.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
-          requiredActions: event.interventionPlan.adjustments.map(adj => adj.description),
+          urgencyLevel: event.urgency.toUpperCase() as
+            | 'LOW'
+            | 'MEDIUM'
+            | 'HIGH'
+            | 'CRITICAL',
+          requiredActions: event.interventionPlan.adjustments.map(
+            (adj) => adj.description,
+          ),
           deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // TODO: Calculate from event data
           context: `Intervention triggered due to: ${event.triggerCause}`,
         },
@@ -235,8 +246,11 @@ export class InterventionTriggeredHandler
         studentName,
         {
           supportType: event.interventionType,
-          guidanceMessage: 'We\'re here to provide personalized support for your learning journey.',
-          actionItems: event.interventionPlan.adjustments.map(adj => adj.description),
+          guidanceMessage:
+            "We're here to provide personalized support for your learning journey.",
+          actionItems: event.interventionPlan.adjustments.map(
+            (adj) => adj.description,
+          ),
           supportContactInfo: {
             name: 'Support Team',
             email: 'support@shrameva.com',

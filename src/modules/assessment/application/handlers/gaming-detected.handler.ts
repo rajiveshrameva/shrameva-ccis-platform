@@ -577,9 +577,11 @@ export class GamingDetectedHandler
 
       // Get person details for student warning email
       const person = await this.personRepository.findById(event.personId);
-      
+
       if (!person) {
-        console.error(`[GAMING NOTIFICATIONS] Person not found: ${event.personId.getValue()}`);
+        console.error(
+          `[GAMING NOTIFICATIONS] Person not found: ${event.personId.getValue()}`,
+        );
         return;
       }
 
@@ -593,7 +595,8 @@ export class GamingDetectedHandler
           studentName,
           {
             detectionType: event.gamingType,
-            guidanceMessage: 'We noticed some patterns in your assessment approach. Let us help you succeed authentically.',
+            guidanceMessage:
+              'We noticed some patterns in your assessment approach. Let us help you succeed authentically.',
             improvementTips: [
               'Take your time to read questions carefully',
               'Use the practice mode to familiarize yourself with the format',
@@ -612,7 +615,7 @@ export class GamingDetectedHandler
       // Notify assessment integrity team for serious incidents
       if (event.severity === 'critical' || event.severity === 'high') {
         const integrityTeamEmails = ['integrity@shrameva.com']; // TODO: Get from config
-        
+
         await this.emailService.sendGamingDetectedAlertEmail(
           integrityTeamEmails,
           {
@@ -622,7 +625,11 @@ export class GamingDetectedHandler
           },
           {
             detectionType: event.gamingType,
-            severity: event.severity.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+            severity: event.severity.toUpperCase() as
+              | 'LOW'
+              | 'MEDIUM'
+              | 'HIGH'
+              | 'CRITICAL',
             evidence: event.detectionDetails.evidence,
             timestamp: new Date(),
             assessmentContext: `Session: ${event.sessionId}`,

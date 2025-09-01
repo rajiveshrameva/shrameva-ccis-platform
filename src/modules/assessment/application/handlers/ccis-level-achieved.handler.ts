@@ -159,7 +159,9 @@ export class CCISLevelAchievedHandler
       const person = await this.personRepository.findById(personId);
 
       if (!person) {
-        console.error(`[NOTIFICATIONS] Person not found: ${personId.getValue()}`);
+        console.error(
+          `[NOTIFICATIONS] Person not found: ${personId.getValue()}`,
+        );
         return;
       }
 

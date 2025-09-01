@@ -441,9 +441,11 @@ export class AssessmentCompletedHandler
     try {
       // Get person details for email
       const person = await this.personRepository.findById(event.personId);
-      
+
       if (!person) {
-        console.error(`[STUDENT NOTIFICATIONS] Person not found: ${event.personId.getValue()}`);
+        console.error(
+          `[STUDENT NOTIFICATIONS] Person not found: ${event.personId.getValue()}`,
+        );
         return;
       }
 
@@ -461,13 +463,19 @@ export class AssessmentCompletedHandler
           assessmentType: event.assessmentContext.assessmentType,
           completionDate: new Date(), // TODO: Get actual completion date from event
           overallScore: 85, // TODO: Calculate from performance metrics
-          ccisProgressions: event.competencyResults.map(result => ({
+          ccisProgressions: event.competencyResults.map((result) => ({
             competency: result.competencyType.getName(),
-            previousLevel: result.previousLevel ? result.previousLevel.getLevel() : 0,
+            previousLevel: result.previousLevel
+              ? result.previousLevel.getLevel()
+              : 0,
             newLevel: result.achievedLevel.getLevel(),
-            improvement: result.achievedLevel.getLevel() - (result.previousLevel ? result.previousLevel.getLevel() : 0),
+            improvement:
+              result.achievedLevel.getLevel() -
+              (result.previousLevel ? result.previousLevel.getLevel() : 0),
           })),
-          nextSteps: event.recommendations.immediateActions.map(action => action.action) || [
+          nextSteps: event.recommendations.immediateActions.map(
+            (action) => action.action,
+          ) || [
             'Review your detailed performance report',
             'Practice in areas needing improvement',
             'Take the next level assessment when ready',
