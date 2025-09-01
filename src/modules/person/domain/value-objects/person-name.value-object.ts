@@ -112,7 +112,8 @@ export class PersonName extends ValueObject<PersonNameProps> {
   private static readonly MAX_DISPLAY_NAME_LENGTH = 150;
 
   /** Regex pattern for valid name characters (including Unicode and Arabic support) */
-  private static readonly VALID_NAME_PATTERN = /^[\p{L}\p{M}\p{N}\s\-'\.]+$/u;
+  private static readonly VALID_NAME_PATTERN =
+    /^[a-zA-Z\u00C0-\u017F\u0100-\u024F\u1E00-\u1EFF\u0400-\u04FF\u0370-\u03FF\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u4E00-\u9FFF\u3400-\u4DBF\u20000-\u2A6DF\u2A700-\u2B73F\u2B740-\u2B81F\u2B820-\u2CEAF\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F\d\s\-'\.]+$/;
 
   /** Regex pattern specifically for Arabic script validation */
   private static readonly ARABIC_SCRIPT_PATTERN =
@@ -309,7 +310,8 @@ export class PersonName extends ValueObject<PersonNameProps> {
     }
 
     // Display names can have more characters like parentheses, commas
-    const displayNamePattern = /^[\p{L}\p{M}\s\-'\.(),]+$/u;
+    const displayNamePattern =
+      /^[a-zA-Z\u00C0-\u017F\u0100-\u024F\u1E00-\u1EFF\u0400-\u04FF\u0370-\u03FF\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u4E00-\u9FFF\u3400-\u4DBF\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F\s\-'\.(),]+$/;
     if (!displayNamePattern.test(trimmed)) {
       throw new ValidationException(
         'Display name contains invalid characters',
@@ -553,7 +555,10 @@ export class PersonName extends ValueObject<PersonNameProps> {
     return allParts
       .join(' ')
       .toLowerCase()
-      .replace(/[^\p{L}\p{M}\s]/gu, '') // Remove all non-letter characters (supports Unicode/Arabic)
+      .replace(
+        /[^a-zA-Z\u00C0-\u017F\u0100-\u024F\u1E00-\u1EFF\u0400-\u04FF\u0370-\u03FF\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\u4E00-\u9FFF\u3400-\u4DBF\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F\s]/g,
+        '',
+      ) // Remove all non-letter characters (supports Unicode/Arabic)
       .replace(/\s+/g, ' ')
       .trim();
   }

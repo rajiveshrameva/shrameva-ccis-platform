@@ -92,6 +92,9 @@ import { CCISCalculationService } from './domain/services/ccis-calculation.servi
 import { GamingDetectionService } from './domain/services/gaming-detection.service';
 import { ScaffoldingAdjustmentService } from './domain/services/scaffolding-adjustment.service';
 
+// Shared Infrastructure
+import { SharedInfrastructureModule } from '../../shared/infrastructure/shared-infrastructure.module';
+
 // Shared Services (to be implemented)
 // import { DatabaseModule } from '../../shared/infrastructure/database/database.module';
 // import { LoggingModule } from '../../shared/infrastructure/logging/logging.module';
@@ -105,6 +108,7 @@ import { ScaffoldingAdjustmentService } from './domain/services/scaffolding-adju
  */
 @Module({
   imports: [
+    SharedInfrastructureModule,
     // TODO: Enable CQRS pattern when @nestjs/cqrs is available
     // CqrsModule,
     // TODO: Add shared modules when available

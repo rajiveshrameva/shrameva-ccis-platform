@@ -1,5 +1,9 @@
 import { IEventHandler } from '../../../../shared/domain/events/event-handler.interface';
 import { CCISLevelAchievedEvent } from '../../domain/events/ccis-level-achieved.event';
+import { EmailService } from '../../../../shared/infrastructure/email/email.service';
+import { AuditService } from '../../../../shared/infrastructure/audit/audit.service';
+import { PersonRepository } from '../../../person/infrastructure/repositories/person.repository';
+import { PersonID } from '../../../../shared/value-objects/id.value-object';
 
 /**
  * Event Handler: CCIS Level Achieved
@@ -36,18 +40,22 @@ import { CCISLevelAchievedEvent } from '../../domain/events/ccis-level-achieved.
 export class CCISLevelAchievedHandler
   implements IEventHandler<CCISLevelAchievedEvent>
 {
-  constructor() // TODO: Inject required services
-  // private readonly skillPassportService: SkillPassportService,
-  // private readonly notificationService: NotificationService,
-  // private readonly analyticsService: AnalyticsService,
-  // private readonly learningPathService: LearningPathService,
-  // private readonly placementService: PlacementService,
-  // private readonly badgeService: BadgeService,
-  // private readonly peerComparisonService: PeerComparisonService,
-  // private readonly interventionService: InterventionService,
-  // private readonly auditService: AuditService,
-  // private readonly logger: Logger
-  {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly auditService: AuditService,
+    private readonly personRepository: PersonRepository,
+  ) {
+    // TODO: Inject additional services when available
+    // private readonly skillPassportService: SkillPassportService,
+    // private readonly notificationService: NotificationService,
+    // private readonly analyticsService: AnalyticsService,
+    // private readonly learningPathService: LearningPathService,
+    // private readonly placementService: PlacementService,
+    // private readonly badgeService: BadgeService,
+    // private readonly peerComparisonService: PeerComparisonService,
+    // private readonly interventionService: InterventionService,
+    // private readonly logger: Logger
+  }
 
   /**
    * Handle CCIS Level Achieved Event
@@ -140,24 +148,43 @@ export class CCISLevelAchievedHandler
   private async sendNotifications(
     event: CCISLevelAchievedEvent,
   ): Promise<void> {
-    // TODO: Implement notification service
-    // const notification = {
-    //   type: 'achievement',
-    //   title: 'New CCIS Level Achieved!',
-    //   message: event.getCelebrationMessage(),
-    //   personId: event.personId,
-    //   metadata: {
-    //     competency: event.competencyType.getName(),
-    //     level: event.newLevel.getLevel(),
-    //     isBreakthrough: event.isBreakthroughAchievement()
-    //   }
-    // };
+    try {
+      // Extract event data
+      const personId = event.personId;
+      const competencyName = event.competencyType.getName();
+      const newLevel = event.newLevel.getLevel();
+      const achievements = [event.getCelebrationMessage()];
 
-    // await this.notificationService.send(notification);
+      // Fetch person details for email
+      const person = await this.personRepository.findById(personId);
 
-    console.log(
-      `[NOTIFICATIONS] Sent achievement notification: "${event.getCelebrationMessage()}"`,
-    );
+      if (!person) {
+        console.error(`[NOTIFICATIONS] Person not found: ${personId.getValue()}`);
+        return;
+      }
+
+      const studentEmail = person.email.getValue();
+      const studentName = person.name.fullName;
+
+      // Send CCIS level achievement email
+      await this.emailService.sendCCISLevelAchievedEmail(
+        studentEmail,
+        studentName,
+        competencyName,
+        newLevel,
+        achievements,
+      );
+
+      console.log(
+        `[NOTIFICATIONS] Sent CCIS level achievement email for ${competencyName} level ${newLevel} to: ${studentEmail}`,
+      );
+    } catch (error) {
+      console.error(
+        `[NOTIFICATIONS] Failed to send achievement notification:`,
+        error,
+      );
+      // Don't throw - notification failures shouldn't break the main flow
+    }
   }
 
   /**
@@ -320,16 +347,46 @@ export class CCISLevelAchievedHandler
    * Audit the achievement for compliance and tracking
    */
   private async auditAchievement(event: CCISLevelAchievedEvent): Promise<void> {
-    // TODO: Implement audit service
-    // await this.auditService.recordAchievement({
-    //   eventType: 'ccis_level_achieved',
-    //   personId: event.personId,
-    //   timestamp: event.achievementTimestamp,
-    //   details: event.toJSON(),
-    //   source: 'assessment_engine'
-    // });
+    try {
+      await this.auditService.logCCISDecision(
+        event.personId.getValue(),
+        event.assessmentSessionId,
+        {
+          assessmentId: event.assessmentSessionId,
+          studentId: event.personId.getValue(),
+          competencyType: event.competencyType.getName(),
+          previousLevel: event.previousLevel?.getLevel() || 0,
+          newLevel: event.newLevel.getLevel(),
+          confidenceScore: event.confidence.getScore(),
+          behavioralSignals: {
+            hintFrequency: 0, // TODO: Extract from event when available
+            errorRecoveryTime: 0,
+            transferSuccessRate: event.progressionMetrics.averagePerformance,
+            metacognitiveAccuracy: event.progressionMetrics.consistencyScore,
+            completionEfficiency: 0.8, // Default for now
+            helpSeekingQuality: 0.7,
+            selfAssessmentAlignment: 0.6,
+          },
+          aiReasoning: `CCIS level ${event.newLevel.getLevel()} achieved for ${event.competencyType.getName()} competency with ${event.confidence.getScore()}% confidence`,
+          validationChecks: {
+            consistencyCheck: event.confidence.getScore() >= 50,
+            gamingDetection: false, // TODO: Extract from assessment context
+            crossValidation: event.evidenceCount >= 5,
+          },
+          reviewRequired: event.confidence.getScore() < 70,
+        },
+      );
 
-    console.log(`[AUDIT] Recorded CCIS level achievement audit trail`);
+      console.log(
+        `[AUDIT] ✅ Recorded CCIS level achievement audit trail for person ${event.personId.getValue()}`,
+      );
+    } catch (error) {
+      console.error(
+        `[AUDIT] ❌ Failed to record CCIS achievement audit:`,
+        error,
+      );
+      // Don't throw - audit failures shouldn't break the achievement flow
+    }
   }
 
   /**

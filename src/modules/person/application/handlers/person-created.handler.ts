@@ -1,8 +1,8 @@
-// src/modules/person/application/handlers/person-created.handler.ts
-
 import { Injectable, Logger } from '@nestjs/common';
 import { IEventHandler } from '../../../../shared/domain/events/event-handler.interface';
 import { PersonCreatedEvent } from '../../domain/events/person-created.event';
+import { EmailService } from '../../../../shared/infrastructure/email/email.service';
+import { AuditService } from '../../../../shared/infrastructure/audit/audit.service';
 
 /**
  * Person Created Event Handler
@@ -30,13 +30,15 @@ import { PersonCreatedEvent } from '../../domain/events/person-created.event';
 export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private readonly logger = new Logger(PersonCreatedHandler.name);
 
-  constructor() // TODO: Inject required services when implementing infrastructure
-  // private readonly emailService: EmailService,
-  // private readonly auditService: AuditService,
-  // private readonly notificationService: NotificationService,
-  // private readonly onboardingService: OnboardingService,
-  // private readonly analyticsService: AnalyticsService,
-  {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly auditService: AuditService,
+  ) {
+    // TODO: Inject additional services when implementing infrastructure
+    // private readonly notificationService: NotificationService,
+    // private readonly onboardingService: OnboardingService,
+    // private readonly analyticsService: AnalyticsService,
+  }
 
   /**
    * Gets the human-readable name of this handler
@@ -108,24 +110,28 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private async sendWelcomeEmail(event: PersonCreatedEvent): Promise<void> {
     this.logger.debug(`Sending welcome email to: ${event.payload.email}`);
 
-    // TODO: Implement email service integration
-    // const emailTemplate = await this.emailService.getTemplate('welcome', {
-    //   locale: event.payload.preferredLanguage || 'en_IN',
-    //   country: event.payload.countryCode || 'INDIA'
-    // });
-    //
-    // await this.emailService.send({
-    //   to: event.payload.email,
-    //   subject: emailTemplate.subject,
-    //   template: emailTemplate.template,
-    //   variables: {
-    //     name: event.payload.name,
-    //     profileUrl: `https://app.shrameva.com/profile/${event.payload.personId}`,
-    //     verificationRequired: true
-    //   }
-    // });
+    try {
+      // Use the new dedicated welcome email template
+      await this.emailService.sendWelcomeOnboardingEmail(
+        event.payload.email,
+        event.payload.name,
+        {
+          country: event.payload.countryCode === 'AE' ? 'UAE' : 'India',
+          hasSkillPassport: true, // Skill passport is created automatically for new persons
+          registrationSource: 'direct_signup', // Could be 'college_partner', 'referral', etc.
+        },
+      );
 
-    this.logger.debug(`Welcome email queued for: ${event.payload.email}`);
+      this.logger.log(
+        `✅ Welcome onboarding email sent successfully to: ${event.payload.email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to send welcome email to ${event.payload.email}:`,
+        error,
+      );
+      // Don't throw - email failures shouldn't break person creation
+    }
   }
 
   /**
@@ -174,29 +180,24 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
       `Creating audit log for person creation: ${event.payload.personId}`,
     );
 
-    // TODO: Implement audit service integration
-    // await this.auditService.log({
-    //   eventType: 'PERSON_CREATED',
-    //   entityType: 'Person',
-    //   entityId: event.payload.personId,
-    //   userId: event.payload.personId, // Self-registration
-    //   timestamp: event.occurredOn,
-    //   metadata: {
-    //     email: event.payload.email,
-    //     country: event.payload.countryCode,
-    //     source: 'DIRECT_REGISTRATION',
-    //     institutionId: this.isInstitutionalAccount(event) ? 'AUTO_DETECTED' : null
-    //   },
-    //   complianceFlags: {
-    //     gdprApplicable: event.payload.countryCode === 'UAE',
-    //     dataProcessingConsent: true,
-    //     marketingConsent: false
-    //   }
-    // });
+    try {
+      await this.auditService.logStudentRegistration(event.payload.personId, {
+        email: event.payload.email,
+        college: 'To Be Updated', // Will be updated when student information is collected
+        graduationYear: new Date().getFullYear() + 4, // Default to 4 years from now
+        referralSource: 'direct_registration',
+      });
 
-    this.logger.debug(
-      `Audit log created for person: ${event.payload.personId}`,
-    );
+      this.logger.log(
+        `Audit log created for person: ${event.payload.personId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to create audit log for person: ${event.payload.personId}`,
+        error,
+      );
+      // Don't throw - audit failures shouldn't break person creation
+    }
   }
 
   /**

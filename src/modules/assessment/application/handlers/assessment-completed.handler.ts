@@ -1,5 +1,8 @@
 import { IEventHandler } from '../../../../shared/domain/events/event-handler.interface';
 import { AssessmentCompletedEvent } from '../../domain/events/assessment-completed.event';
+import { AuditService } from '../../../../shared/infrastructure/audit/audit.service';
+import { EmailService } from '../../../../shared/infrastructure/email/email.service';
+import { PersonRepository } from '../../../person/infrastructure/repositories/person.repository';
 
 /**
  * Event Handler: Assessment Completed
@@ -42,20 +45,24 @@ import { AssessmentCompletedEvent } from '../../domain/events/assessment-complet
 export class AssessmentCompletedHandler
   implements IEventHandler<AssessmentCompletedEvent>
 {
-  constructor() // TODO: Inject required services
-  // private readonly skillPassportService: SkillPassportService,
-  // private readonly analyticsService: AnalyticsService,
-  // private readonly aiAgentOrchestrator: AIAgentOrchestrator,
-  // private readonly learningPathService: LearningPathService,
-  // private readonly placementService: PlacementService,
-  // private readonly interventionService: InterventionService,
-  // private readonly notificationService: NotificationService,
-  // private readonly qualityAssuranceService: QualityAssuranceService,
-  // private readonly auditService: AuditService,
-  // private readonly reportingService: ReportingService,
-  // private readonly stakeholderService: StakeholderService,
-  // private readonly logger: Logger
-  {}
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly emailService: EmailService,
+    private readonly personRepository: PersonRepository,
+  ) {
+    // TODO: Inject required services
+    // private readonly skillPassportService: SkillPassportService,
+    // private readonly analyticsService: AnalyticsService,
+    // private readonly aiAgentOrchestrator: AIAgentOrchestrator,
+    // private readonly learningPathService: LearningPathService,
+    // private readonly placementService: PlacementService,
+    // private readonly interventionService: InterventionService,
+    // private readonly notificationService: NotificationService,
+    // private readonly qualityAssuranceService: QualityAssuranceService,
+    // private readonly reportingService: ReportingService,
+    // private readonly stakeholderService: StakeholderService,
+    // private readonly logger: Logger
+  }
 
   /**
    * Handle Assessment Completed Event
@@ -431,16 +438,57 @@ export class AssessmentCompletedHandler
   private async sendStudentNotifications(
     event: AssessmentCompletedEvent,
   ): Promise<void> {
-    // TODO: Implement notification service
-    const summary = event.getPerformanceSummary();
-    const placementSummary = event.getPlacementReadinessSummary();
+    try {
+      // Get person details for email
+      const person = await this.personRepository.findById(event.personId);
+      
+      if (!person) {
+        console.error(`[STUDENT NOTIFICATIONS] Person not found: ${event.personId.getValue()}`);
+        return;
+      }
 
-    console.log(
-      `[STUDENT NOTIFICATIONS] Assessment complete notification sent`,
-    );
-    console.log(
-      `[STUDENT NOTIFICATIONS] Grade: ${summary.overallGrade}, Placement readiness: ${placementSummary.readiness}`,
-    );
+      const studentEmail = person.email.getValue();
+      const studentName = person.name.fullName;
+
+      const summary = event.getPerformanceSummary();
+      const placementSummary = event.getPlacementReadinessSummary();
+
+      // Send assessment completion email
+      await this.emailService.sendAssessmentCompletedEmail(
+        studentEmail,
+        studentName,
+        {
+          assessmentType: event.assessmentContext.assessmentType,
+          completionDate: new Date(), // TODO: Get actual completion date from event
+          overallScore: 85, // TODO: Calculate from performance metrics
+          ccisProgressions: event.competencyResults.map(result => ({
+            competency: result.competencyType.getName(),
+            previousLevel: result.previousLevel ? result.previousLevel.getLevel() : 0,
+            newLevel: result.achievedLevel.getLevel(),
+            improvement: result.achievedLevel.getLevel() - (result.previousLevel ? result.previousLevel.getLevel() : 0),
+          })),
+          nextSteps: event.recommendations.immediateActions.map(action => action.action) || [
+            'Review your detailed performance report',
+            'Practice in areas needing improvement',
+            'Take the next level assessment when ready',
+          ],
+          country: 'India', // TODO: Get from person profile
+        },
+      );
+
+      console.log(
+        `[STUDENT NOTIFICATIONS] Assessment completion email sent to: ${studentEmail}`,
+      );
+      console.log(
+        `[STUDENT NOTIFICATIONS] Grade: ${summary.overallGrade}, Placement readiness: ${placementSummary.readiness}`,
+      );
+    } catch (error) {
+      console.error(
+        `[STUDENT NOTIFICATIONS] Failed to send student notification:`,
+        error,
+      );
+      // Don't throw - notification failures shouldn't break the main flow
+    }
   }
 
   /**
@@ -523,8 +571,39 @@ export class AssessmentCompletedHandler
   private async auditAssessmentCompletion(
     event: AssessmentCompletedEvent,
   ): Promise<void> {
-    // TODO: Implement audit service
-    console.log(`[AUDIT] Recorded assessment completion audit trail`);
+    try {
+      // Get the highest competency level achieved
+      const highestLevel = Math.max(
+        ...event.competencyResults.map((result) =>
+          result.achievedLevel.getLevel(),
+        ),
+      );
+
+      // Get primary competency (first one assessed or highest achieving)
+      const primaryCompetency = event.competencyResults[0];
+
+      await this.auditService.logAssessmentCompleted(
+        event.personId.getValue(),
+        event.sessionId,
+        primaryCompetency.competencyType.getName(),
+        highestLevel,
+        event.overallPerformance.totalTasksCompleted,
+        event.overallPerformance.sessionDuration,
+      );
+
+      console.log(
+        `[AUDIT] ✅ Recorded assessment completion audit trail for person ${event.personId.getValue()}`,
+      );
+      console.log(
+        `[AUDIT] Session: ${event.sessionId}, Highest Level: ${highestLevel}, Competencies: ${event.competencyResults.length}`,
+      );
+    } catch (error) {
+      console.error(
+        `[AUDIT] ❌ Failed to record assessment completion audit:`,
+        error,
+      );
+      // Don't throw - audit failures shouldn't break the completion flow
+    }
   }
 
   /**

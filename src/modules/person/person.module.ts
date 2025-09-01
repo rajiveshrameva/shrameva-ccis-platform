@@ -9,6 +9,7 @@ import { PersonUpdatedHandler } from './application/handlers/person-updated.hand
 import { PersonVerifiedHandler } from './application/handlers/person-verified.handler';
 import { PersonDeletedHandler } from './application/handlers/person-deleted.handler';
 import { SkillPassportCreatedHandler } from './application/handlers/skill-passport-created.handler';
+import { SharedInfrastructureModule } from '../../shared/infrastructure/shared-infrastructure.module';
 
 /**
  * Person Module
@@ -22,6 +23,7 @@ import { SkillPassportCreatedHandler } from './application/handlers/skill-passpo
  */
 @Module({
   imports: [
+    SharedInfrastructureModule,
     // DatabaseModule will be imported from shared when needed
   ],
   controllers: [PersonController],

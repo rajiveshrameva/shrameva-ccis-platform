@@ -1,5 +1,8 @@
 import { IEventHandler } from '../../../../shared/domain/events/event-handler.interface';
 import { GamingDetectedEvent } from '../../domain/events/gaming-detected.event';
+import { AuditService } from '../../../../shared/infrastructure/audit/audit.service';
+import { EmailService } from '../../../../shared/infrastructure/email/email.service';
+import { PersonRepository } from '../../../person/infrastructure/repositories/person.repository';
 
 /**
  * Event Handler: Gaming Detected
@@ -41,19 +44,17 @@ import { GamingDetectedEvent } from '../../domain/events/gaming-detected.event';
 export class GamingDetectedHandler
   implements IEventHandler<GamingDetectedEvent>
 {
-  constructor() // TODO: Inject required services
-  // private readonly assessmentIntegrityService: AssessmentIntegrityService,
-  // private readonly riskProfileService: RiskProfileService,
-  // private readonly interventionService: InterventionService,
-  // private readonly notificationService: NotificationService,
-  // private readonly auditService: AuditService,
-  // private readonly gamingAnalyticsService: GamingAnalyticsService,
-  // private readonly qualityAssuranceService: QualityAssuranceService,
-  // private readonly sessionManagementService: SessionManagementService,
-  // private readonly dataIntegrityService: DataIntegrityService,
-  // private readonly stakeholderService: StakeholderService,
-  // private readonly logger: Logger
-  {}
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly emailService: EmailService,
+    private readonly personRepository: PersonRepository,
+  ) {
+    // TODO: Inject required services when available
+    // private readonly interventionService: InterventionService,
+    // private readonly analyticsService: AnalyticsService,
+    // private readonly qualityAssuranceService: QualityAssuranceService,
+    // private readonly notificationService: NotificationService,
+  }
 
   /**
    * Handle Gaming Detected Event
@@ -526,55 +527,122 @@ export class GamingDetectedHandler
    * Record comprehensive audit trail
    */
   private async recordAuditTrail(event: GamingDetectedEvent): Promise<void> {
-    // TODO: Implement audit service
-    // await this.auditService.recordGamingIncident({
-    //   eventType: 'gaming_detected',
-    //   personId: event.personId,
-    //   sessionId: event.sessionId,
-    //   incident: event.toJSON(),
-    //   actions: event.responseRecommendations,
-    //   timestamp: event.occurredAt,
-    //   severity: event.severity,
-    //   integrity_impact: event.impactAssessment
-    // });
+    try {
+      await this.auditService.logGamingDetection(
+        event.personId.getValue(),
+        event.sessionId,
+        [
+          {
+            patternType: event.gamingType,
+            confidence: event.detectionDetails.confidence,
+            evidence: {
+              pattern: event.detectionDetails.pattern,
+              evidence: event.detectionDetails.evidence,
+              rawData: event.detectionDetails.rawData,
+              detectionMethod: event.detectionDetails.detectionMethod,
+              thresholds: event.detectionDetails.thresholds,
+              severity: event.severity,
+              taskType: event.contextData.taskType,
+              competencyFocus: event.contextData.competencyFocus.getName(),
+              taskProgress: event.contextData.taskProgress,
+              previousIncidents: event.contextData.previousIncidents,
+              sessionDuration: event.contextData.sessionDuration,
+              platform: event.contextData.platform,
+            },
+          },
+        ],
+      );
 
-    console.log(`[AUDIT] Recorded gaming incident audit trail`);
-    console.log(
-      `[AUDIT] Event ID: ${event.eventId}, Severity: ${event.severity}`,
-    );
+      console.log(
+        `[AUDIT] ✅ Recorded gaming incident audit trail for person ${event.personId.getValue()}`,
+      );
+      console.log(
+        `[AUDIT] Event ID: ${event.eventId}, Severity: ${event.severity}`,
+      );
+    } catch (error) {
+      console.error(
+        `[AUDIT] ❌ Failed to record gaming incident audit:`,
+        error,
+      );
+      // Don't throw - audit failures shouldn't break the gaming response flow
+    }
   }
 
   /**
    * Notify relevant stakeholders
    */
   private async notifyStakeholders(event: GamingDetectedEvent): Promise<void> {
-    // TODO: Implement stakeholder notifications
-    const interventionSummary = event.getInterventionSummary();
+    try {
+      const interventionSummary = event.getInterventionSummary();
 
-    // Notify assessment integrity team
-    if (event.severity === 'critical' || event.severity === 'high') {
-      // await this.stakeholderService.notifyIntegrityTeam({
-      //   incident: event,
-      //   priority: event.severity === 'critical' ? 'urgent' : 'high',
-      //   requiredActions: interventionSummary.urgentActions
-      // });
+      // Get person details for student warning email
+      const person = await this.personRepository.findById(event.personId);
+      
+      if (!person) {
+        console.error(`[GAMING NOTIFICATIONS] Person not found: ${event.personId.getValue()}`);
+        return;
+      }
+
+      const studentEmail = person.email.getValue();
+      const studentName = person.name.fullName;
+
+      // Send educational guidance email to student (supportive approach)
+      if (interventionSummary.educationalGuidance) {
+        await this.emailService.sendGamingDetectedWarningEmail(
+          studentEmail,
+          studentName,
+          {
+            detectionType: event.gamingType,
+            guidanceMessage: 'We noticed some patterns in your assessment approach. Let us help you succeed authentically.',
+            improvementTips: [
+              'Take your time to read questions carefully',
+              'Use the practice mode to familiarize yourself with the format',
+              'Contact support if you need technical assistance',
+              'Remember that honest performance helps us provide better learning paths',
+            ],
+            country: 'India', // TODO: Get from person profile
+          },
+        );
+
+        console.log(
+          `[GAMING NOTIFICATIONS] Educational guidance email sent to: ${studentEmail}`,
+        );
+      }
+
+      // Notify assessment integrity team for serious incidents
+      if (event.severity === 'critical' || event.severity === 'high') {
+        const integrityTeamEmails = ['integrity@shrameva.com']; // TODO: Get from config
+        
+        await this.emailService.sendGamingDetectedAlertEmail(
+          integrityTeamEmails,
+          {
+            studentId: event.personId.getValue(),
+            studentName: studentName,
+            studentEmail: studentEmail,
+          },
+          {
+            detectionType: event.gamingType,
+            severity: event.severity.toUpperCase() as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+            evidence: event.detectionDetails.evidence,
+            timestamp: new Date(),
+            assessmentContext: `Session: ${event.sessionId}`,
+          },
+        );
+
+        console.log(
+          `[STAKEHOLDER NOTIFICATIONS] Integrity team notified of ${event.severity} gaming incident`,
+        );
+      }
 
       console.log(
-        `[STAKEHOLDER NOTIFICATIONS] Integrity team notified of ${event.severity} gaming incident`,
+        `[STAKEHOLDER NOTIFICATIONS] All gaming detection notifications completed`,
       );
-    }
-
-    // Notify educators if educational guidance is needed
-    if (interventionSummary.educationalGuidance) {
-      // await this.stakeholderService.notifyEducators({
-      //   personId: event.personId,
-      //   incident: event,
-      //   recommendedActions: event.responseRecommendations.followUpInterventions
-      // });
-
-      console.log(
-        `[STAKEHOLDER NOTIFICATIONS] Educators notified for guidance intervention`,
+    } catch (error) {
+      console.error(
+        `[GAMING NOTIFICATIONS] Failed to send notifications:`,
+        error,
       );
+      // Don't throw - notification failures shouldn't break the gaming detection workflow
     }
   }
 

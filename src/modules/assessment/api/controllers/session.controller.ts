@@ -71,8 +71,8 @@ import { AssessmentResponseDto } from '../dtos/assessment-response.dto';
 // Application Layer
 import { AssessmentHandlers } from '../../application/handlers/assessment.handlers';
 
-// Guards
-import { AssessmentAuthGuard } from '../guards/assessment-auth.guard';
+// Guards and Auth
+import { AssessmentAuthGuard } from '../guards';
 
 // Session-specific DTOs
 interface SessionPauseDto {

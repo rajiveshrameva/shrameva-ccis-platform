@@ -3,6 +3,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IEventHandler } from '../../../../shared/domain/events/event-handler.interface';
 import { PersonDeletedEvent } from '../../domain/events/person-deleted.event';
+import { EmailService } from '../../../../shared/infrastructure/email/email.service';
 
 /**
  * Person Deleted Event Handler
@@ -24,14 +25,14 @@ import { PersonDeletedEvent } from '../../domain/events/person-deleted.event';
 export class PersonDeletedHandler implements IEventHandler<PersonDeletedEvent> {
   private readonly logger = new Logger(PersonDeletedHandler.name);
 
-  constructor() // TODO: Inject required services when implementing infrastructure
-  // private readonly dataCleanupService: DataCleanupService,
-  // private readonly emailService: EmailService,
-  // private readonly auditService: AuditService,
-  // private readonly searchService: SearchService,
-  // private readonly subscriptionService: SubscriptionService,
-  // private readonly anonymizationService: AnonymizationService,
-  {}
+  constructor(private readonly emailService: EmailService) {
+    // TODO: Inject required services when implementing infrastructure
+    // private readonly dataCleanupService: DataCleanupService,
+    // private readonly auditService: AuditService,
+    // private readonly searchService: SearchService,
+    // private readonly subscriptionService: SubscriptionService,
+    // private readonly anonymizationService: AnonymizationService,
+  }
 
   getHandlerName(): string {
     return 'PersonDeletedHandler';
@@ -119,20 +120,37 @@ export class PersonDeletedHandler implements IEventHandler<PersonDeletedEvent> {
       `Sending deletion confirmation email for person: ${event.payload.personId}`,
     );
 
-    // TODO: Implement deletion confirmation email
-    // Only send if deletion was requested by the person themselves
-    // if (!event.payload.deletedBy) {
-    //   await this.emailService.send({
-    //     to: event.payload.lastKnownEmail,
-    //     subject: 'Account Deletion Confirmed - Shrameva CCIS',
-    //     template: 'account-deleted',
-    //     variables: {
-    //       deletionDate: event.payload.deletedAt,
-    //       dataRetentionInfo: 'Personal data will be completely removed within 30 days',
-    //       supportContact: 'privacy@shrameva.com'
-    //     }
-    //   });
-    // }
+    try {
+      // Note: In real implementation, we would need to extract email and name
+      // from the event or retrieve from a temporary deletion audit record
+      // before the person data is completely removed
+      const personEmail = 'user@example.com'; // TODO: Extract from event or audit record
+      const personName = 'User'; // TODO: Extract from event or audit record
+
+      await this.emailService.sendAccountDeletionConfirmedEmail(
+        personEmail,
+        personName,
+        {
+          deletionDate: event.payload.deletedAt,
+          dataRetentionPeriod: 30, // GDPR compliance: 30 days retention
+          appealDeadline: new Date(
+            event.payload.deletedAt.getTime() + 14 * 24 * 60 * 60 * 1000, // 14 days to appeal
+          ),
+          country: 'India', // Default to India, should be extracted from person profile
+          hasActiveAssessments: false, // TODO: Check from assessment service
+        },
+      );
+
+      this.logger.log(
+        `Deletion confirmation email sent successfully for person: ${event.payload.personId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send deletion confirmation email for person ${event.payload.personId}: ${error.message}`,
+        error.stack,
+      );
+      // Continue execution - email failure shouldn't block deletion workflow
+    }
   }
 
   private async cancelActiveServices(event: PersonDeletedEvent): Promise<void> {

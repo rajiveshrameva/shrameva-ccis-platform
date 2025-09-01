@@ -69,8 +69,8 @@ import { ProgressResponseDto } from '../dtos/progress-response.dto';
 // Application Layer
 import { AssessmentHandlers } from '../../application/handlers/assessment.handlers';
 
-// Guards
-import { AssessmentAuthGuard } from '../guards/assessment-auth.guard';
+// Guards and Auth
+import { AssessmentAuthGuard } from '../guards';
 
 // Analytics-specific interfaces
 interface CustomAnalyticsQuery {

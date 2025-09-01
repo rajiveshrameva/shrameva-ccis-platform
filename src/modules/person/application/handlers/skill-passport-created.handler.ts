@@ -3,6 +3,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IEventHandler } from '../../../../shared/domain/events/event-handler.interface';
 import { SkillPassportCreatedEvent } from '../../domain/events/skill-passport-created.event';
+import { EmailService } from '../../../../shared/infrastructure/email/email.service';
 
 /**
  * Skill Passport Created Event Handler
@@ -25,14 +26,14 @@ export class SkillPassportCreatedHandler
 {
   private readonly logger = new Logger(SkillPassportCreatedHandler.name);
 
-  constructor() // TODO: Inject required services when implementing infrastructure
-  // private readonly ccisService: CCISService,
-  // private readonly emailService: EmailService,
-  // private readonly auditService: AuditService,
-  // private readonly assessmentService: AssessmentService,
-  // private readonly aiAgentService: AIAgentService,
-  // private readonly progressTrackingService: ProgressTrackingService,
-  {}
+  constructor(private readonly emailService: EmailService) {
+    // TODO: Inject required services when implementing infrastructure
+    // private readonly ccisService: CCISService,
+    // private readonly auditService: AuditService,
+    // private readonly assessmentService: AssessmentService,
+    // private readonly aiAgentService: AIAgentService,
+    // private readonly progressTrackingService: ProgressTrackingService,
+  }
 
   getHandlerName(): string {
     return 'SkillPassportCreatedHandler';
@@ -111,20 +112,41 @@ export class SkillPassportCreatedHandler
       `Sending skill passport welcome email for person: ${event.payload.personId}`,
     );
 
-    // TODO: Implement skill passport welcome email
-    // await this.emailService.send({
-    //   to: event.payload.email,
-    //   subject: 'Your Skill Passport is Ready - Start Your CCIS Journey',
-    //   template: 'skill-passport-created',
-    //   variables: {
-    //     name: event.payload.name,
-    //     skillPassportId: event.payload.skillPassportId,
-    //     competencies: event.payload.competencies,
-    //     assessmentUrl: `https://app.shrameva.com/assessment/${event.payload.skillPassportId}`,
-    //     ccisLevels: [1, 2, 3, 4],
-    //     expectedTimeToLevel2: '2-4 weeks'
-    //   }
-    // });
+    try {
+      // Note: In real implementation, we would need to extract email and name
+      // from the person service/repository using the personId
+      const personEmail = 'user@example.com'; // TODO: Extract from person service
+      const personName = 'User'; // TODO: Extract from person service
+
+      await this.emailService.sendSkillPassportWelcomeEmail(
+        personEmail,
+        personName,
+        {
+          passportId: event.payload.passportId,
+          country: 'India', // Default to India, should be extracted from person profile
+          initialCompetencies: [
+            'Digital Literacy',
+            'Communication Skills',
+            'Problem Solving',
+            'Teamwork',
+          ],
+          ccisFrameworkVersion: '2024.1',
+          nextAssessmentDate: new Date(
+            event.payload.createdAt.getTime() + 7 * 24 * 60 * 60 * 1000, // 7 days from creation
+          ),
+        },
+      );
+
+      this.logger.log(
+        `Skill passport welcome email sent successfully for person: ${event.payload.personId}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send skill passport welcome email for person ${event.payload.personId}: ${error.message}`,
+        error.stack,
+      );
+      // Continue execution - email failure shouldn't block skill passport creation workflow
+    }
   }
 
   private async createAuditLogEntry(

@@ -584,3 +584,45 @@ model CompetencyAssessment {
     @@index([competencyType, culturalContext])
     @@map("competency_assessments")
 }
+
+// ===================================================================
+// AUDIT & COMPLIANCE SCHEMA
+// ===================================================================
+
+model AuditEvent {
+    // Core Identity
+    id        String   @id @default(uuid()) @db.Uuid
+    timestamp DateTime @default(now()) @db.Timestamptz
+
+    // Event Classification
+    eventType  String @db.VarChar(50) // Maps to AuditEventType enum
+    entityId   String @db.VarChar(255) // ID of the entity being audited
+    entityType String @db.VarChar(50) // Type of entity (student, assessment, session)
+
+    // User Context
+    userId    String? @db.VarChar(255) // Acting user (for admin actions)
+    sessionId String? @db.VarChar(255) // Session identifier
+
+    // Network Context
+    ipAddress String? @db.VarChar(45) // IPv6 compatible
+    userAgent String? @db.Text
+
+    // Event Data
+    metadata          Json // Non-sensitive event metadata
+    sensitiveDataHash String? @db.Text // Encrypted/hashed sensitive data
+
+    // Compliance & Retention
+    retentionPolicy String? @db.VarChar(50) // Data retention policy
+    complianceFlags Json? // GDPR, SOX, etc. compliance markers
+
+    // Indexing for performance
+    @@index([eventType])
+    @@index([entityId, entityType])
+    @@index([userId])
+    @@index([timestamp])
+    @@index([sessionId])
+    @@index([ipAddress])
+    @@index([eventType, timestamp])
+    @@index([entityId, eventType, timestamp])
+    @@map("audit_events")
+}

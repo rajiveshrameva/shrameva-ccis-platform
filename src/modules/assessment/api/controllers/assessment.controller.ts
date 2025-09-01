@@ -91,7 +91,7 @@ import {
 import { PersonID } from '../../../../shared/value-objects/id.value-object';
 
 // Guards and Auth
-import { AssessmentAuthGuard } from '../guards/assessment-auth.guard';
+import { AssessmentAuthGuard } from '../guards';
 
 @ApiTags('Assessment')
 @Controller('assessment')

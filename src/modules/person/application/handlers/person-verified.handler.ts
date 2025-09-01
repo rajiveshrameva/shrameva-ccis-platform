@@ -3,6 +3,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { IEventHandler } from '../../../../shared/domain/events/event-handler.interface';
 import { PersonVerifiedEvent } from '../../domain/events/person-verified.event';
+import { EmailService } from '../../../../shared/infrastructure/email/email.service';
 
 /**
  * Person Verified Event Handler
@@ -25,13 +26,13 @@ export class PersonVerifiedHandler
 {
   private readonly logger = new Logger(PersonVerifiedHandler.name);
 
-  constructor() // TODO: Inject required services when implementing infrastructure
-  // private readonly featureService: FeatureService,
-  // private readonly emailService: EmailService,
-  // private readonly auditService: AuditService,
-  // private readonly trustScoreService: TrustScoreService,
-  // private readonly placementService: PlacementService,
-  {}
+  constructor(private readonly emailService: EmailService) {
+    // TODO: Inject required services when implementing infrastructure
+    // private readonly featureService: FeatureService,
+    // private readonly auditService: AuditService,
+    // private readonly trustScoreService: TrustScoreService,
+    // private readonly placementService: PlacementService,
+  }
 
   getHandlerName(): string {
     return 'PersonVerifiedHandler';
@@ -108,16 +109,33 @@ export class PersonVerifiedHandler
       `Sending verification confirmation to: ${event.payload.personId}`,
     );
 
-    // TODO: Implement verification confirmation email
-    // await this.emailService.send({
-    //   to: event.payload.email,
-    //   subject: 'Identity Verified - Welcome to Verified Shrameva CCIS',
-    //   template: 'identity-verified',
-    //   variables: {
-    //     name: event.payload.name,
-    //     verifiedAt: event.payload.verifiedAt,
-    //     verificationType: event.payload.verificationType,
-    //     newFeaturesUrl: 'https://app.shrameva.com/features/verified'
+    try {
+      await this.emailService.sendVerificationConfirmedEmail(
+        event.payload.email,
+        event.payload.name,
+        {
+          verificationType: 'identity', // Default to identity verification
+          country: 'India', // Default to India, should be extracted from person profile
+          unlockedFeatures: [
+            'Advanced CCIS Assessment',
+            'Skill Passport Sharing',
+            'Premium Learning Paths',
+            'Direct Employer Connections',
+          ],
+          trustScoreImprovement: 25, // Default improvement for verification
+        },
+      );
+
+      this.logger.log(
+        `Verification confirmation email sent successfully to ${event.payload.email}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send verification confirmation email to ${event.payload.email}: ${error.message}`,
+        error.stack,
+      );
+      // Continue execution - email failure shouldn't block verification workflow
+    }
     //   }
     // });
   }
