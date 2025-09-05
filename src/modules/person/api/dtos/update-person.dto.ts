@@ -13,8 +13,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class UpdatePersonDto {
   @ApiProperty({
     description: 'Person ID to update',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-    format: 'uuid',
+    example: 'cid_V1StGXR8_Z5jdHi6B-myT',
+    pattern: '^cid_[A-Za-z0-9_-]{21}$',
   })
   personId: string;
 
@@ -27,8 +27,8 @@ export class UpdatePersonDto {
 
   @ApiProperty({
     description: 'ID of person making the update (for audit trail)',
-    example: '123e4567-e89b-12d3-a456-426614174001',
-    format: 'uuid',
+    example: 'cid_V1StGXR8_Z5jdHi6B-myT',
+    pattern: '^cid_[A-Za-z0-9_-]{21}$',
   })
   updatedBy: string;
 
@@ -295,13 +295,12 @@ export class UpdatePersonDto {
       errors.push('Updated by person ID is required for audit trail');
     }
 
-    // UUID format validation
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (dto.personId && !uuidRegex.test(dto.personId)) {
+    // CID format validation
+    const cidRegex = /^cid_[A-Za-z0-9_-]{21}$/;
+    if (dto.personId && !cidRegex.test(dto.personId)) {
       errors.push('Invalid person ID format');
     }
-    if (dto.updatedBy && !uuidRegex.test(dto.updatedBy)) {
+    if (dto.updatedBy && !cidRegex.test(dto.updatedBy)) {
       errors.push('Invalid updated by person ID format');
     }
 

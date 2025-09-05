@@ -22,8 +22,7 @@ import { PersonUpdatedEvent } from '../../domain/events/person-updated.event';
 export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
   private readonly logger = new Logger(PersonUpdatedHandler.name);
 
-  constructor() // TODO: Inject required services when implementing infrastructure
-  // private readonly cacheService: CacheService,
+  constructor() // private readonly cacheService: CacheService, // TODO: Inject required services when implementing infrastructure
   // private readonly auditService: AuditService,
   // private readonly emailService: EmailService,
   // private readonly searchService: SearchService,
@@ -39,8 +38,9 @@ export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
   }
 
   async handle(event: PersonUpdatedEvent): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.log(
-      `Handling PersonUpdatedEvent for person: ${event.payload.personId}`,
+      `Handling PersonUpdatedEvent for person: ${eventData.personId}`,
     );
 
     try {
@@ -67,11 +67,11 @@ export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
       await this.syncWithExternalSystems(event);
 
       this.logger.log(
-        `Successfully processed PersonUpdatedEvent for person: ${event.payload.personId}`,
+        `Successfully processed PersonUpdatedEvent for person: ${eventData.personId}`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to process PersonUpdatedEvent for person: ${event.payload.personId}`,
+        `Failed to process PersonUpdatedEvent for person: ${eventData.personId}`,
         error.stack,
       );
       throw error;
@@ -79,51 +79,55 @@ export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
   }
 
   private async updateProfileCache(event: PersonUpdatedEvent): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Updating profile cache for person: ${event.payload.personId}`,
+      `Updating profile cache for person: ${eventData.personId}`,
     );
 
     // TODO: Implement cache update
-    // await this.cacheService.invalidate(`profile:${event.payload.personId}`);
-    // await this.cacheService.set(`profile:${event.payload.personId}`, event.payload.updatedData);
+    // await this.cacheService.invalidate(`profile:${eventData.personId}`);
+    // await this.cacheService.set(`profile:${eventData.personId}`, eventData.updatedData);
   }
 
   private async createAuditLogEntry(event: PersonUpdatedEvent): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Creating audit log for person update: ${event.payload.personId}`,
+      `Creating audit log for person update: ${eventData.personId}`,
     );
 
     // TODO: Implement audit logging
     // await this.auditService.log({
     //   eventType: 'PERSON_UPDATED',
     //   entityType: 'Person',
-    //   entityId: event.payload.personId,
-    //   userId: event.payload.updatedBy,
+    //   entityId: eventData.personId,
+    //   userId: eventData.updatedBy,
     //   timestamp: event.occurredOn,
-    //   changes: event.payload.changes,
+    //   changes: eventData.changes,
     //   metadata: {
-    //     changedFields: event.payload.changedFields,
-    //     previousValues: event.payload.previousValues
+    //     changedFields: eventData.changedFields,
+    //     previousValues: eventData.previousValues
     //   }
     // });
   }
 
   private async updateSearchIndexes(event: PersonUpdatedEvent): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Updating search indexes for person: ${event.payload.personId}`,
+      `Updating search indexes for person: ${eventData.personId}`,
     );
 
     // TODO: Implement search index update
-    // await this.searchService.updateDocument('persons', event.payload.personId, {
-    //   ...event.payload.updatedData,
+    // await this.searchService.updateDocument('persons', eventData.personId, {
+    //   ...eventData.updatedData,
     //   lastUpdated: event.occurredOn
     // });
   }
 
   private requiresReVerification(event: PersonUpdatedEvent): boolean {
+    const eventData = event.getEventData();
     const sensitiveFields = ['email', 'phone', 'dateOfBirth', 'legalName'];
     return (
-      event.payload.updatedFields?.some((field) =>
+      eventData.updatedFields?.some((field) =>
         sensitiveFields.includes(field),
       ) ?? false
     );
@@ -132,19 +136,21 @@ export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
   private async triggerReVerification(
     event: PersonUpdatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Triggering re-verification for person: ${event.payload.personId}`,
+      `Triggering re-verification for person: ${eventData.personId}`,
     );
 
     // TODO: Implement re-verification trigger
     // await this.verificationService.triggerReVerification({
-    //   personId: event.payload.personId,
+    //   personId: eventData.personId,
     //   reason: 'SENSITIVE_DATA_CHANGED',
-    //   changedFields: event.payload.changedFields
+    //   changedFields: eventData.changedFields
     // });
   }
 
   private isSignificantChange(event: PersonUpdatedEvent): boolean {
+    const eventData = event.getEventData();
     const significantFields = [
       'email',
       'phone',
@@ -152,7 +158,7 @@ export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
       'skillPassport',
     ];
     return (
-      event.payload.updatedFields?.some((field) =>
+      eventData.updatedFields?.some((field) =>
         significantFields.includes(field),
       ) ?? false
     );
@@ -161,18 +167,19 @@ export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
   private async sendChangeNotification(
     event: PersonUpdatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Sending change notification for person: ${event.payload.personId}`,
+      `Sending change notification for person: ${eventData.personId}`,
     );
 
     // TODO: Implement change notification
     // await this.emailService.send({
-    //   to: event.payload.email,
+    //   to: eventData.email,
     //   subject: 'Profile Updated - Shrameva CCIS',
     //   template: 'profile-updated',
     //   variables: {
-    //     name: event.payload.name,
-    //     changedFields: event.payload.changedFields,
+    //     name: eventData.name,
+    //     changedFields: eventData.changedFields,
     //     timestamp: event.occurredOn
     //   }
     // });
@@ -181,13 +188,14 @@ export class PersonUpdatedHandler implements IEventHandler<PersonUpdatedEvent> {
   private async syncWithExternalSystems(
     event: PersonUpdatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Syncing with external systems for person: ${event.payload.personId}`,
+      `Syncing with external systems for person: ${eventData.personId}`,
     );
 
     // TODO: Implement external system sync
-    // if (event.payload.changedFields?.includes('skillPassport')) {
-    //   await this.externalSyncService.updateSkillPassport(event.payload.personId);
+    // if (eventData.changedFields?.includes('skillPassport')) {
+    //   await this.externalSyncService.updateSkillPassport(eventData.personId);
     // }
   }
 }

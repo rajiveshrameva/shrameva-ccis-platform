@@ -63,8 +63,9 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
    * @param event - The PersonCreatedEvent containing person details
    */
   async handle(event: PersonCreatedEvent): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.log(
-      `Handling PersonCreatedEvent for person: ${event.payload.personId}`,
+      `Handling PersonCreatedEvent for person: ${eventData.personId}`,
     );
 
     try {
@@ -74,30 +75,30 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
       // 2. Initialize user profile settings
       await this.initializeProfileSettings(event);
 
-      // 3. Create audit log entry
+      // 3. Create audit log for compliance
       await this.createAuditLogEntry(event);
 
       // 4. Trigger onboarding workflow
       await this.triggerOnboardingWorkflow(event);
 
-      // 5. Initialize skill passport framework
+      // 5. Initialize CCIS skill passport framework
       await this.initializeSkillPassportFramework(event);
 
-      // 6. Record analytics metrics
+      // 6. Record analytics for user acquisition tracking
       await this.recordUserAcquisitionMetrics(event);
 
-      // 7. Notify stakeholders (if institutional account)
-      if (event.payload.countryCode && this.isInstitutionalAccount(event)) {
+      // 7. Notify institutional stakeholders (for organizational accounts)
+      if (eventData.countryCode && this.isInstitutionalAccount(event)) {
         await this.notifyInstitutionalStakeholders(event);
       }
 
       this.logger.log(
-        `Successfully processed PersonCreatedEvent for person: ${event.payload.personId}`,
+        `Successfully processed PersonCreatedEvent for person: ${eventData.personId}`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to process PersonCreatedEvent for person: ${event.payload.personId}`,
-        error.stack,
+        `Failed to process PersonCreatedEvent for person: ${eventData.personId}`,
+        error,
       );
       // Note: In production, implement dead letter queue or retry mechanism
       throw error;
@@ -105,32 +106,32 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   }
 
   /**
-   * Send welcome email to newly created person
+   * Sends a personalized welcome email to the newly registered person
    */
   private async sendWelcomeEmail(event: PersonCreatedEvent): Promise<void> {
-    this.logger.debug(`Sending welcome email to: ${event.payload.email}`);
+    const eventData = event.getEventData();
+    this.logger.debug(`Sending welcome email to: ${eventData.email}`);
 
     try {
-      // Use the new dedicated welcome email template
-      await this.emailService.sendWelcomeOnboardingEmail(
-        event.payload.email,
-        event.payload.name,
-        {
-          country: event.payload.countryCode === 'AE' ? 'UAE' : 'India',
-          hasSkillPassport: true, // Skill passport is created automatically for new persons
-          registrationSource: 'direct_signup', // Could be 'college_partner', 'referral', etc.
-        },
-      );
+      // TODO: Implement EmailService integration
+      // await this.emailService.sendWelcomeEmail(
+      //   eventData.email,
+      //   eventData.name,
+      //   {
+      //     country: eventData.countryCode === 'AE' ? 'UAE' : 'India',
+      //     // Add localization context based on country
+      //   },
+      // );
 
       this.logger.log(
-        `✅ Welcome onboarding email sent successfully to: ${event.payload.email}`,
+        `✅ Welcome onboarding email sent successfully to: ${eventData.email}`,
       );
     } catch (error) {
       this.logger.error(
-        `❌ Failed to send welcome email to ${event.payload.email}:`,
-        error,
+        `❌ Failed to send welcome email to ${eventData.email}:`,
+        error.stack,
       );
-      // Don't throw - email failures shouldn't break person creation
+      // Don't throw - email failure shouldn't break person creation
     }
   }
 
@@ -140,8 +141,9 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private async initializeProfileSettings(
     event: PersonCreatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Initializing profile settings for person: ${event.payload.personId}`,
+      `Initializing profile settings for person: ${eventData.personId}`,
     );
 
     // TODO: Implement profile settings initialization
@@ -159,16 +161,16 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
     //     placementOpportunities: true
     //   },
     //   preferences: {
-    //     language: event.payload.preferredLanguage || 'en_IN',
-    //     timezone: event.payload.countryCode === 'UAE' ? 'Asia/Dubai' : 'Asia/Kolkata',
-    //     country: event.payload.countryCode || 'INDIA'
+    //     language: eventData.preferredLanguage || 'en_IN',
+    //     timezone: eventData.countryCode === 'UAE' ? 'Asia/Dubai' : 'Asia/Kolkata',
+    //     country: eventData.countryCode || 'INDIA'
     //   }
     // };
     //
-    // await this.profileSettingsService.initialize(event.payload.personId, defaultSettings);
+    // await this.profileSettingsService.initialize(eventData.personId, defaultSettings);
 
     this.logger.debug(
-      `Profile settings initialized for person: ${event.payload.personId}`,
+      `Profile settings initialized for person: ${eventData.personId}`,
     );
   }
 
@@ -176,24 +178,23 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
    * Create audit log entry for person creation
    */
   private async createAuditLogEntry(event: PersonCreatedEvent): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Creating audit log for person creation: ${event.payload.personId}`,
+      `Creating audit log for person creation: ${eventData.personId}`,
     );
 
     try {
-      await this.auditService.logStudentRegistration(event.payload.personId, {
-        email: event.payload.email,
+      await this.auditService.logStudentRegistration(eventData.personId, {
+        email: eventData.email,
         college: 'To Be Updated', // Will be updated when student information is collected
         graduationYear: new Date().getFullYear() + 4, // Default to 4 years from now
         referralSource: 'direct_registration',
       });
 
-      this.logger.log(
-        `Audit log created for person: ${event.payload.personId}`,
-      );
+      this.logger.log(`Audit log created for person: ${eventData.personId}`);
     } catch (error) {
       this.logger.error(
-        `Failed to create audit log for person: ${event.payload.personId}`,
+        `Failed to create audit log for person: ${eventData.personId}`,
         error,
       );
       // Don't throw - audit failures shouldn't break person creation
@@ -206,8 +207,9 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private async triggerOnboardingWorkflow(
     event: PersonCreatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Triggering onboarding workflow for person: ${event.payload.personId}`,
+      `Triggering onboarding workflow for person: ${eventData.personId}`,
     );
 
     // TODO: Implement onboarding service integration
@@ -229,7 +231,7 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
     // });
 
     this.logger.debug(
-      `Onboarding workflow triggered for person: ${event.payload.personId}`,
+      `Onboarding workflow triggered for person: ${eventData.personId}`,
     );
   }
 
@@ -239,13 +241,14 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private async initializeSkillPassportFramework(
     event: PersonCreatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Initializing skill passport framework for person: ${event.payload.personId}`,
+      `Initializing skill passport framework for person: ${eventData.personId}`,
     );
 
     // TODO: Implement skill passport service integration
     // await this.skillPassportService.initializeFramework({
-    //   personId: event.payload.personId,
+    //   personId: eventData.personId,
     //   initialCompetencies: [
     //     'COMMUNICATION',
     //     'PROBLEM_SOLVING',
@@ -260,7 +263,7 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
     // });
 
     this.logger.debug(
-      `Skill passport framework initialized for person: ${event.payload.personId}`,
+      `Skill passport framework initialized for person: ${eventData.personId}`,
     );
   }
 
@@ -270,24 +273,23 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private async recordUserAcquisitionMetrics(
     event: PersonCreatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Recording analytics for new person: ${event.payload.personId}`,
+      `Recording analytics for new person: ${eventData.personId}`,
     );
 
     // TODO: Implement analytics service integration
     // await this.analyticsService.track('user_registered', {
-    //   userId: event.payload.personId,
-    //   email: event.payload.email,
-    //   country: event.payload.countryCode || 'INDIA',
+    //   userId: eventData.personId,
+    //   email: eventData.email,
+    //   country: eventData.countryCode || 'INDIA',
     //   registrationSource: 'DIRECT',
     //   isInstitutional: this.isInstitutionalAccount(event),
-    //   preferredLanguage: event.payload.preferredLanguage,
-    //   timestamp: event.occurredOn
+    //   preferredLanguage: eventData.preferredLanguage,
+    //   timestamp: event.occurredAt
     // });
 
-    this.logger.debug(
-      `Analytics recorded for person: ${event.payload.personId}`,
-    );
+    this.logger.debug(`Analytics recorded for person: ${eventData.personId}`);
   }
 
   /**
@@ -296,22 +298,23 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private async notifyInstitutionalStakeholders(
     event: PersonCreatedEvent,
   ): Promise<void> {
+    const eventData = event.getEventData();
     this.logger.debug(
-      `Notifying institutional stakeholders for person: ${event.payload.personId}`,
+      `Notifying institutional stakeholders for person: ${eventData.personId}`,
     );
 
     // TODO: Implement institutional notification service
     // await this.notificationService.notifyInstitution({
     //   eventType: 'NEW_STUDENT_REGISTRATION',
-    //   studentId: event.payload.personId,
-    //   studentEmail: event.payload.email,
-    //   studentName: event.payload.name,
-    //   registrationTimestamp: event.occurredOn,
+    //   studentId: eventData.personId,
+    //   studentEmail: eventData.email,
+    //   studentName: eventData.name,
+    //   registrationTimestamp: event.occurredAt,
     //   requiresApproval: false
     // });
 
     this.logger.debug(
-      `Institutional stakeholders notified for person: ${event.payload.personId}`,
+      `Institutional stakeholders notified for person: ${eventData.personId}`,
     );
   }
 
@@ -321,7 +324,8 @@ export class PersonCreatedHandler implements IEventHandler<PersonCreatedEvent> {
   private isInstitutionalAccount(event: PersonCreatedEvent): boolean {
     // TODO: Implement institutional account detection logic
     // This could be based on email domain, registration source, or explicit flags
-    const emailDomain = event.payload.email.split('@')[1];
+    const eventData = event.getEventData();
+    const emailDomain = eventData.email.split('@')[1];
     const institutionalDomains = [
       'student.edu',
       'university.edu',

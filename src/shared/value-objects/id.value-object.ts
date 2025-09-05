@@ -41,8 +41,8 @@ export abstract class ID extends ValueObject<string> {
   }
 
   /**
-   * Validate CID format
-   * Must be 'cid_' prefix followed by valid nanoid characters
+   * Validate CID format or UUID format (for database compatibility)
+   * Accepts both 'cid_' prefix nanoid and standard UUID formats
    */
   protected validate(value: string): void {
     if (!value) {
@@ -61,11 +61,12 @@ export abstract class ID extends ValueObject<string> {
       );
     }
 
-    if (!this.isValidCID(value)) {
+    // Accept both CID format and UUID format for database compatibility
+    if (!this.isValidCID(value) && !this.isValidUUID(value)) {
       throw new ValueObjectValidationError(
         this.constructor.name,
         value,
-        'ID must be a valid CID format (cid_[nanoid])',
+        'ID must be a valid CID format (cid_[nanoid]) or UUID format',
       );
     }
   }
@@ -101,6 +102,17 @@ export abstract class ID extends ValueObject<string> {
     // nanoid uses: A-Za-z0-9_-
     const validNanoidRegex = /^[A-Za-z0-9_-]+$/;
     return validNanoidRegex.test(nanoidPart);
+  }
+
+  /**
+   * Validate UUID format (for database compatibility)
+   * Supports both standard UUID and hyphenated UUID formats
+   */
+  private isValidUUID(uuid: string): boolean {
+    // Standard UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
   }
 
   /**

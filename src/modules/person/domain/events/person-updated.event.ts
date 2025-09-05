@@ -22,21 +22,32 @@ export interface PersonUpdatedEventProps {
   version: number;
 }
 
-export class PersonUpdatedEvent extends DomainEvent {
-  public readonly payload: PersonUpdatedEventProps;
+// WeakMap to store event data (to bypass Object.freeze() restrictions)
+const eventDataMap = new WeakMap<PersonUpdatedEvent, PersonUpdatedEventProps>();
 
+export class PersonUpdatedEvent extends DomainEvent {
   constructor(props: PersonUpdatedEventProps) {
     const personId = PersonID.fromString(props.personId);
     super(personId, 'Person');
-    this.payload = props;
+    // Store the event data in WeakMap instead of direct property assignment
+    eventDataMap.set(this, props);
   }
 
-  public getEventData(): Record<string, any> {
+  public getEventData(): PersonUpdatedEventProps {
+    const eventData = eventDataMap.get(this);
+    if (!eventData) {
+      throw new Error('Event data not found');
+    }
+    return eventData;
+  }
+
+  public getEventDataAsRecord(): Record<string, any> {
+    const eventData = this.getEventData();
     return {
-      personId: this.payload.personId,
-      updatedFields: this.payload.updatedFields,
-      updatedAt: this.payload.updatedAt.toISOString(),
-      version: this.payload.version,
+      personId: eventData.personId,
+      updatedFields: eventData.updatedFields,
+      updatedAt: eventData.updatedAt.toISOString(),
+      version: eventData.version,
     };
   }
 }

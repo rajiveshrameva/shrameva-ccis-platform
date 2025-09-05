@@ -692,6 +692,73 @@ export interface IPersonRepository extends IRepositoryBase<Person, PersonID> {
     criteria: AdvancedSearchCriteria,
     options?: FindAllOptions,
   ): Promise<PaginatedResult<Person>>;
+
+  // ===================================================================
+  // DELETION AND REACTIVATION OPERATIONS
+  // ===================================================================
+
+  /**
+   * Finds a deleted person by email address for reactivation
+   *
+   * Enables re-registration workflows by locating soft-deleted accounts
+   * that can be reactivated instead of creating duplicates.
+   *
+   * @param email - Email address to search for in deleted accounts
+   * @returns Promise resolving to deleted person or null if not found
+   * @throws RepositoryException if database operation fails
+   *
+   * @example
+   * ```typescript
+   * const deletedPerson = await repository.findDeletedByEmail('user@example.com');
+   * if (deletedPerson) {
+   *   // Reactivate existing account instead of creating new
+   *   await repository.reactivate(deletedPerson);
+   * }
+   * ```
+   */
+  findDeletedByEmail(email: string): Promise<Person | null>;
+
+  /**
+   * Finds a deleted person by phone number for reactivation
+   *
+   * Enables re-registration workflows by locating soft-deleted accounts
+   * that can be reactivated instead of creating duplicates.
+   *
+   * @param phone - Phone number to search for in deleted accounts
+   * @returns Promise resolving to deleted person or null if not found
+   * @throws RepositoryException if database operation fails
+   *
+   * @example
+   * ```typescript
+   * const deletedPerson = await repository.findDeletedByPhone('+919876543210');
+   * if (deletedPerson) {
+   *   // Reactivate existing account instead of creating new
+   *   await repository.reactivate(deletedPerson);
+   * }
+   * ```
+   */
+  findDeletedByPhone(phone: string): Promise<Person | null>;
+
+  /**
+   * Reactivates a soft-deleted person account
+   *
+   * Restores a previously deleted account by clearing deletion timestamp,
+   * reactivating account status, and resetting verification states for security.
+   *
+   * @param person - The deleted person entity to reactivate
+   * @returns Promise resolving to the reactivated person
+   * @throws RepositoryException if database operation fails
+   *
+   * @example
+   * ```typescript
+   * const deletedPerson = await repository.findDeletedByEmail('user@example.com');
+   * if (deletedPerson) {
+   *   const reactivatedPerson = await repository.reactivate(deletedPerson);
+   *   // Send reactivation notification email
+   * }
+   * ```
+   */
+  reactivate(person: Person): Promise<Person>;
 }
 
 // ===================================================================

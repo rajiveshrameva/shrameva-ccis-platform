@@ -30,23 +30,25 @@ export interface PersonCreatedEventProps {
   createdAt: Date;
 }
 
-export class PersonCreatedEvent extends DomainEvent {
-  public readonly payload: PersonCreatedEventProps;
+// Store event data in WeakMap to avoid object freeze issues
+const eventDataMap = new WeakMap<PersonCreatedEvent, Record<string, any>>();
 
+export class PersonCreatedEvent extends DomainEvent {
   constructor(props: PersonCreatedEventProps) {
     const personId = PersonID.fromString(props.personId);
     super(personId, 'Person');
-    this.payload = props;
+
+    // Store event data in WeakMap after object is frozen
+    eventDataMap.set(this, {
+      personId: props.personId,
+      email: props.email,
+      name: props.name,
+      countryCode: props.countryCode,
+      createdAt: props.createdAt.toISOString(),
+    });
   }
 
   public getEventData(): Record<string, any> {
-    return {
-      personId: this.payload.personId,
-      email: this.payload.email,
-      name: this.payload.name,
-      countryCode: this.payload.countryCode,
-      preferredLanguage: this.payload.preferredLanguage,
-      createdAt: this.payload.createdAt.toISOString(),
-    };
+    return eventDataMap.get(this) || {};
   }
 }

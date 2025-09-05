@@ -25,7 +25,7 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  // ApiBearerAuth, // TODO: Re-enable when implementing authentication
   ApiParam,
   ApiQuery,
   ApiBody,
@@ -44,7 +44,7 @@ import {
 import { CreatePersonCommand } from '../application/commands/create-person.command';
 import { UpdatePersonCommand } from '../application/commands/update-person.command';
 import { PersonService } from '../application/services/person.service';
-// import { PersonRepository } from '../infrastructure/repositories/person.repository';
+import { KYCStatus } from '../domain/entities/person.entity';
 
 /**
  * Person Controller
@@ -122,7 +122,7 @@ export class PersonController {
         preferredName: createPersonDto.preferredName,
         email: createPersonDto.email,
         phone: createPersonDto.phone,
-        dateOfBirth: createPersonDto.dateOfBirth,
+        dateOfBirth: new Date(createPersonDto.dateOfBirth),
         gender: createPersonDto.gender,
         addressLine1: createPersonDto.addressLine1,
         addressLine2: createPersonDto.addressLine2,
@@ -139,14 +139,47 @@ export class PersonController {
         metadata: createPersonDto.metadata,
       });
 
-      // TODO: Execute command through service/handler
-      // const person = await this.personService.createPerson(command);
+      // Execute command through service
+      const person = await this.personService.createPerson(command);
 
-      // Mock response for now
-      const mockPerson = this.createMockPersonResponse(createPersonDto);
+      // Convert to response DTO
+      const response: PersonResponseDto = {
+        id: person.id.getValue(),
+        fullName: `${person.name.firstName} ${person.name.lastName}`,
+        firstName: person.name.firstName,
+        lastName: person.name.lastName,
+        middleName: person.name.middleName,
+        preferredName: person.name.preferredName,
+        email: person.email.getValue(),
+        phone: person.primaryPhone.number,
+        age: person.age.currentAge,
+        gender: person.gender.gender,
+        address: {
+          addressLine1: person.primaryAddress.addressLine1,
+          addressLine2: person.primaryAddress.addressLine2,
+          city: person.primaryAddress.city,
+          state: person.primaryAddress.stateOrProvince,
+          postalCode: person.primaryAddress.postalCode,
+          country: person.primaryAddress.country,
+          addressType: person.primaryAddress.addressType,
+          isPrimary: person.primaryAddress.isPrimary,
+        },
+        profileVisibility: person.privacySettings.employerVisibility
+          ? 'PUBLIC'
+          : 'PRIVATE',
+        profileCompleteness: 60, // TODO: Calculate based on filled fields
+        onboardingCompleted: false,
+        emailVerified: person.isVerified,
+        phoneVerified: person.primaryPhone.isVerified,
+        kycCompleted: person.kycStatus !== KYCStatus.NOT_STARTED,
+        status: person.status,
+        createdAt: person.createdAt,
+        updatedAt: person.updatedAt,
+        version: person.getVersion(),
+      };
 
-      this.logger.log(`Person created successfully: ${mockPerson.id}`);
-      return mockPerson;
+      this.logger.log(`Person created successfully: ${response.id}`);
+      return response;
     } catch (error) {
       this.logger.error(
         `Failed to create person: ${error.message}`,
@@ -175,8 +208,12 @@ export class PersonController {
   })
   @ApiParam({
     name: 'id',
-    description: 'Person UUID',
-    format: 'uuid',
+    description: 'Person CID (format: cid_[nanoid])',
+    schema: {
+      type: 'string',
+      pattern: '^cid_[A-Za-z0-9_-]{21}$',
+    },
+    example: 'cid_V1StGXR8_Z5jdHi6B-myT',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -190,26 +227,30 @@ export class PersonController {
     description: 'Access denied to this person profile',
   })
   async getPersonById(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Query('includePrivate') includePrivate?: boolean,
   ): Promise<PersonResponseDto> {
     this.logger.log(`Getting person by ID: ${id}`);
 
     try {
-      // TODO: Get person from repository
-      // const person = await this.personRepository.findById(id);
-      // if (!person) {
-      //   throw new NotFoundException(`Person with ID ${id} not found`);
-      // }
+      // Validate CID format
+      if (!id.startsWith('cid_') || id.length !== 25) {
+        throw new BadRequestException(
+          'Invalid person ID format. Expected CID format: cid_[nanoid]',
+        );
+      }
+
+      // Get person from service
+      const person = await this.personService.findPersonById(id);
+      if (!person) {
+        throw new NotFoundException(`Person with ID ${id} not found`);
+      }
 
       // TODO: Check access permissions
       // const canViewPrivateData = await this.personService.canViewPrivateData(currentUser, person);
 
-      // Mock response for now
-      const mockPerson = this.createMockPersonResponseById(id);
-
       this.logger.log(`Person retrieved successfully: ${id}`);
-      return PersonResponseDto.fromEntity(mockPerson, includePrivate || false);
+      return PersonResponseDto.fromEntity(person, includePrivate || false);
     } catch (error) {
       this.logger.error(
         `Failed to get person ${id}: ${error.message}`,
@@ -235,8 +276,12 @@ export class PersonController {
   })
   @ApiParam({
     name: 'id',
-    description: 'Person UUID',
-    format: 'uuid',
+    description: 'Person CID (format: cid_[nanoid])',
+    schema: {
+      type: 'string',
+      pattern: '^cid_[A-Za-z0-9_-]{21}$',
+    },
+    example: 'cid_V1StGXR8_Z5jdHi6B-myT',
   })
   @ApiBody({ type: UpdatePersonDto })
   @ApiResponse({
@@ -257,7 +302,7 @@ export class PersonController {
     description: 'Access denied to update this person profile',
   })
   async updatePerson(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() updatePersonDto: UpdatePersonDto,
   ): Promise<PersonResponseDto> {
     this.logger.log(`Updating person: ${id}`);
@@ -422,28 +467,50 @@ export class PersonController {
       const validatedPage = Math.max(1, Number(page));
       const validatedLimit = Math.min(100, Math.max(1, Number(limit)));
 
-      // TODO: Build filter criteria and execute query
-      // const filterCriteria = {
-      //   country,
-      //   status,
-      //   profileVisibility,
-      //   search,
-      //   page: validatedPage,
-      //   limit: validatedLimit,
-      //   sortBy,
-      //   sortOrder,
-      // };
+      // Build filter criteria and execute query
+      const filterCriteria = {
+        country,
+        status,
+        profileVisibility,
+        search,
+        page: validatedPage,
+        limit: validatedLimit,
+        sortBy,
+        sortOrder,
+      };
 
-      // const result = await this.personService.getPersons(filterCriteria);
+      const result = await this.personService.findAllPersons(filterCriteria);
 
-      // Mock response for now
-      const mockResult = this.createMockPersonListResponse(
-        validatedPage,
-        validatedLimit,
-      );
+      // Convert to response DTO
+      const responseData = result.data.map((person: any) => ({
+        id: person.id.getValue(),
+        firstName: person.name.firstName,
+        lastName: person.name.lastName,
+        email: person.email.getValue(),
+        phone: person.primaryPhone.number,
+        country: person.primaryAddress.country,
+        profileVisibility: person.privacySettings.employerVisibility
+          ? 'PUBLIC'
+          : 'PRIVATE',
+        kycStatus: 'PENDING', // Default for now
+        createdAt: person.createdAt,
+        updatedAt: person.updatedAt,
+      }));
 
-      this.logger.log(`Retrieved ${mockResult.data.length} persons`);
-      return mockResult;
+      const responseResult = {
+        data: responseData,
+        meta: {
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+          totalPages: result.totalPages,
+          hasNextPage: result.hasNext,
+          hasPreviousPage: result.hasPrevious,
+        },
+      };
+
+      this.logger.log(`Retrieved ${responseResult.data.length} persons`);
+      return responseResult;
     } catch (error) {
       this.logger.error(
         `Failed to get persons list: ${error.message}`,
@@ -465,8 +532,12 @@ export class PersonController {
   })
   @ApiParam({
     name: 'id',
-    description: 'Person UUID',
-    format: 'uuid',
+    description: 'Person CID (format: cid_[nanoid])',
+    schema: {
+      type: 'string',
+      pattern: '^cid_[A-Za-z0-9_-]{21}$',
+    },
+    example: 'cid_V1StGXR8_Z5jdHi6B-myT',
   })
   @ApiResponse({
     status: HttpStatus.NO_CONTENT,
@@ -479,14 +550,14 @@ export class PersonController {
     description: 'Access denied to delete this person profile',
   })
   async deletePerson(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Query('reason') reason?: string,
   ): Promise<void> {
     this.logger.log(`Deleting person: ${id}`);
 
     try {
-      // TODO: Soft delete person
-      // await this.personService.deletePerson(id, reason);
+      // Soft delete person
+      await this.personService.deletePerson(id, reason);
 
       this.logger.log(`Person deleted successfully: ${id}`);
     } catch (error) {

@@ -128,13 +128,12 @@ export class UpdatePersonCommand {
       errors.push('Updated by person ID is required for audit trail');
     }
 
-    // UUID format validation for IDs
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (this.personId && !uuidRegex.test(this.personId)) {
+    // CID format validation for IDs
+    const cidRegex = /^cid_[A-Za-z0-9_-]{21}$/;
+    if (this.personId && !cidRegex.test(this.personId)) {
       errors.push('Invalid person ID format');
     }
-    if (this.updatedBy && !uuidRegex.test(this.updatedBy)) {
+    if (this.updatedBy && !cidRegex.test(this.updatedBy)) {
       errors.push('Invalid updated by person ID format');
     }
 

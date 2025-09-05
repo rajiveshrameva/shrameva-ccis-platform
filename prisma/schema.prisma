@@ -16,8 +16,8 @@ datasource db {
 // ===================================================================
 
 model Person {
-    // Core Identity
-    id        String    @id @default(uuid()) @db.Uuid
+    // Core Identity - Using CID format for consistency
+    id        String    @id @db.VarChar(25) // cid_[21-char-nanoid] = 25 chars total
     version   Int       @default(1) // Optimistic concurrency control
     createdAt DateTime  @default(now()) @db.Timestamptz
     updatedAt DateTime  @updatedAt @db.Timestamptz
@@ -32,10 +32,10 @@ model Person {
     gender        Gender
 
     // Contact Information
-    email            String    @unique @db.VarChar(255)
+    email            String    @db.VarChar(255)
     emailVerified    Boolean   @default(false)
     emailVerifiedAt  DateTime? @db.Timestamptz
-    phone            String    @unique @db.VarChar(20) // International format
+    phone            String    @db.VarChar(20) // International format
     phoneCountryCode String    @db.VarChar(5) // e.g., "+91", "+971"
     phoneVerified    Boolean   @default(false)
     phoneVerifiedAt  DateTime? @db.Timestamptz
@@ -51,7 +51,7 @@ model Person {
     // Verification & Compliance
     isVerified     Boolean   @default(false)
     verifiedAt     DateTime? @db.Timestamptz
-    verifiedBy     String?   @db.Uuid // Reference to verifying person
+    verifiedBy     String?   @db.VarChar(25) // Reference to verifying person (CID format)
     kycStatus      KYCStatus @default(PENDING)
     kycCompletedAt DateTime? @db.Timestamptz
     trustScore     Float?    @db.Real // 0.0 to 1.0
@@ -87,6 +87,7 @@ model Person {
     assessmentSessions    AssessmentSession[]
     taskInteractions      TaskInteraction[]
     competencyAssessments CompetencyAssessment[]
+    assessments           Assessment[] // Main assessment entity
 
     // Indexes for performance
     @@index([email])
@@ -97,6 +98,7 @@ model Person {
     @@index([createdAt])
     @@index([lastLoginAt])
     @@index([accountStatus])
+    @@index([deletedAt])
     @@map("persons")
 }
 
@@ -105,8 +107,8 @@ model Person {
 // ===================================================================
 
 model SkillPassport {
-    id       String @id @default(uuid()) @db.Uuid
-    personId String @unique @db.Uuid
+    id       String @id @default(cuid()) @db.VarChar(25) // CID format
+    personId String @unique @db.VarChar(25) // Person CID reference
     person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
     // Metadata
@@ -168,8 +170,8 @@ model SkillPassport {
 // ===================================================================
 
 model EmergencyContact {
-    id       String @id @default(uuid()) @db.Uuid
-    personId String @db.Uuid
+    id       String @id @default(cuid()) @db.VarChar(25) // CID format
+    personId String @db.VarChar(25)
     person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
     name         String  @db.VarChar(200)
@@ -186,8 +188,8 @@ model EmergencyContact {
 }
 
 model SocialProfile {
-    id       String @id @default(uuid()) @db.Uuid
-    personId String @db.Uuid
+    id       String @id @default(cuid()) @db.VarChar(25) // CID format
+    personId String @db.VarChar(25)
     person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
     platform   SocialPlatform
@@ -209,8 +211,8 @@ model SocialProfile {
 // ===================================================================
 
 model Student {
-    id       String @id @default(uuid()) @db.Uuid
-    personId String @unique @db.Uuid
+    id       String @id @default(cuid()) @db.VarChar(25) // CID format
+    personId String @unique @db.VarChar(25)
     person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
 
     // Student Identity
@@ -329,13 +331,76 @@ enum PlacementStatus {
 }
 
 // ===================================================================
-// ASSESSMENT DOMAIN SCHEMA
+// ASSESSMENT DOMAIN SCHEMA - Main Assessment Entity
+// ===================================================================
+
+// Main Assessment Entity as per specification
+model Assessment {
+    id              String         @id @default(cuid()) @db.VarChar(25)
+    personId        String         @db.VarChar(25)
+    competencyType  CompetencyType
+    ccisLevel       Int // 1-4
+    confidenceScore Float // 0.0-1.0
+    assessmentDate  DateTime       @default(now()) @db.Timestamptz
+
+    // Behavioral Signals (Core CCIS Calculation)
+    hintRequestFrequency    Float // Hints per minute
+    errorRecoveryTime       Float // Seconds to self-correct
+    transferSuccessRate     Float // 0.0-1.0
+    metacognitiveAccuracy   Float // 0.0-1.0
+    taskCompletionTime      Float // Minutes
+    helpSeekingQuality      Float // 0.0-10.0
+    selfAssessmentAlignment Float // 0.0-1.0
+
+    // AI Decision Context
+    aiReasoningTrace String // LLM decision explanation
+    aiModelUsed      String // e.g., "claude-3-5-sonnet"
+    aiPromptVersion  String // For A/B testing
+
+    // Assessment Context
+    taskIds           String[] // Array of task IDs completed
+    sessionDuration   Float // Total minutes in session
+    distractionEvents Int // Times student left task interface
+
+    // Progression Tracking
+    previousCcisLevel     Int? // Previous level for progression tracking
+    nextLevelRequirements String[] // JSON array of requirements
+    isLevelProgression    Boolean  @default(false)
+
+    // Validation & Quality
+    validationFlags     String[] // Gaming detection, consistency checks
+    humanReviewRequired Boolean  @default(false)
+    humanReviewNotes    String?
+
+    // Relationships
+    person Person @relation(fields: [personId], references: [id])
+
+    @@unique([personId, competencyType, assessmentDate])
+    // Indexes
+    @@index([personId, competencyType])
+    @@index([assessmentDate])
+    @@index([ccisLevel, competencyType])
+    @@map("assessments")
+}
+
+enum CompetencyType {
+    BUSINESS_COMMUNICATION
+    DATA_ANALYSIS
+    TECHNICAL_KNOWLEDGE
+    PROJECT_MANAGEMENT
+    CRITICAL_THINKING
+    LEADERSHIP_COLLABORATION
+    INNOVATION_ADAPTABILITY
+}
+
+// ===================================================================
+// EXISTING ASSESSMENT INFRASTRUCTURE MODELS
 // ===================================================================
 
 model AssessmentSession {
     // Primary identifiers
-    id       String @id @default(uuid()) @db.Uuid
-    personId String @db.Uuid
+    id       String @id @default(cuid()) @db.VarChar(25) // CID format
+    personId String @db.VarChar(25)
 
     // Session configuration
     competencyType String // COMMUNICATION, PROBLEM_SOLVING, etc.
@@ -429,9 +494,9 @@ model AssessmentSession {
 
 model TaskInteraction {
     // Primary identifiers
-    id        String @id @default(uuid()) @db.Uuid
-    sessionId String @db.Uuid
-    personId  String @db.Uuid
+    id        String @id @default(cuid()) @db.VarChar(25) // CID format
+    sessionId String @db.VarChar(25) // CID reference to AssessmentSession
+    personId  String @db.VarChar(25)
     taskId    String @db.VarChar(50)
 
     // Interaction context
@@ -502,9 +567,9 @@ model TaskInteraction {
 
 model CompetencyAssessment {
     // Primary identifiers
-    id             String @id @default(uuid()) @db.Uuid
-    sessionId      String @db.Uuid
-    personId       String @db.Uuid
+    id             String @id @default(cuid()) @db.VarChar(25) // CID format
+    sessionId      String @db.VarChar(25) // CID reference to AssessmentSession
+    personId       String @db.VarChar(25)
     competencyType String // COMMUNICATION, PROBLEM_SOLVING, etc.
 
     // Assessment metadata
@@ -591,7 +656,7 @@ model CompetencyAssessment {
 
 model AuditEvent {
     // Core Identity
-    id        String   @id @default(uuid()) @db.Uuid
+    id        String   @id @default(cuid()) @db.VarChar(25) // CID format
     timestamp DateTime @default(now()) @db.Timestamptz
 
     // Event Classification

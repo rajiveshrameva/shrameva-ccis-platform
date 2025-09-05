@@ -1,6 +1,7 @@
 // src/modules/person/api/dtos/create-person.dto.ts
 
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type, Transform } from 'class-transformer';
 
 /**
  * Create Person DTO
@@ -60,6 +61,8 @@ export class CreatePersonDto {
     example: '1995-08-15',
     format: 'date',
   })
+  @Type(() => Date)
+  @Transform(({ value }) => value ? new Date(value) : value)
   dateOfBirth: Date;
 
   @ApiProperty({

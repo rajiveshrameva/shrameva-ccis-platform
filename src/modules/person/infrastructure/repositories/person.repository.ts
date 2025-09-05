@@ -1,497 +1,652 @@
 // src/modules/person/infrastructure/repositories/person.repository.ts
 
 import { Injectable, Logger } from '@nestjs/common';
-// TODO: Install Prisma - import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 import {
-  IPersonRepository,
-  CompetencyLevelStats,
-  DemographicStats,
-  VerificationMetrics,
-  SearchOptions,
-  AdvancedSearchCriteria,
-} from '../../domain/repositories/person.repository.interface';
+  Gender as PrismaGender,
+  ProfileVisibility as PrismaProfileVisibility,
+  SupportedCountry as PrismaSupportedCountry,
+  KYCStatus as PrismaKYCStatus,
+} from '@prisma/client';
+import { IPersonRepository } from '../../domain/repositories/person.repository.interface';
 import { Person } from '../../domain/entities/person.entity';
 import { PersonID } from '../../../../shared/value-objects/id.value-object';
 import { Email } from '../../../../shared/value-objects/email.value-object';
-import { PhoneNumber } from '../../../../shared/domain/value-objects/phone.value-object';
-import { GenderType } from '../../domain/value-objects/gender.value-object';
-import { SupportedCountry } from '../../domain/value-objects/address.value-object';
 import {
-  PaginatedResult,
+  PhoneNumber,
+  PhoneType,
+} from '../../../../shared/domain/value-objects/phone.value-object';
+import { PersonName } from '../../domain/value-objects/person-name.value-object';
+import { PersonAge } from '../../domain/value-objects/person-age.value-object';
+import {
+  Address,
+  SupportedCountry,
+  AddressType,
+} from '../../domain/value-objects/address.value-object';
+import {
+  Gender,
+  GenderType,
+} from '../../domain/value-objects/gender.value-object';
+import {
   FindAllOptions,
   ITransaction,
   RepositoryException,
+  PaginatedResult,
 } from '../../../../shared/domain/base/repository.interface';
 import {
-  ResourceNotFoundException,
   ValidationException,
   ConcurrencyException,
 } from '../../../../shared/domain/exceptions/domain-exception.base';
+import {
+  PreferredLanguage,
+  VisibilityLevel,
+  DataRetentionPreference,
+} from '../../domain/entities/person.entity';
 
 /**
- * Prisma-based Person Repository Implementation (Stub)
+ * Minimal Person Repository Implementation
  *
- * High-performance repository implementation using Prisma ORM and PostgreSQL
- * for the Shrameva CCIS platform. Currently implemented as stubs until
- * Prisma is properly set up.
- *
- * TODO: Complete implementation steps:
- * 1. Install Prisma dependencies: npm install prisma @prisma/client
- * 2. Initialize Prisma schema: npx prisma init
- * 3. Define Person schema in schema.prisma
- * 4. Generate Prisma client: npx prisma generate
- * 5. Run migrations: npx prisma migrate dev
- * 6. Replace stub implementations with actual Prisma queries
- * 7. Implement domain entity mapping (toDomainEntity/toPrismaData)
- * 8. Add proper error handling and optimistic concurrency control
- *
- * Performance Optimizations (planned):
- * - Connection pooling and prepared statements
- * - Strategic indexing on email, phone, and CCIS levels
- * - Efficient pagination with cursor-based navigation
- * - Selective field loading to minimize data transfer
- * - Query optimization for complex skill passport operations
- *
- * The implementation supports the platform's mission of achieving 70%
- * placement rates through efficient person data management and skill
- * passport tracking across international markets.
+ * Focuses on core CRUD operations for Person creation testing.
+ * This is a simplified implementation to get the Person API working.
  */
 @Injectable()
-export class PersonRepository implements IPersonRepository {
+export class PersonRepository implements Partial<IPersonRepository> {
   private readonly logger = new Logger(PersonRepository.name);
 
-  // TODO: Inject PrismaClient when Prisma is set up
-  // constructor(private readonly prisma: PrismaClient) {
-  constructor() {
-    this.logger.log('PersonRepository initialized - Prisma setup pending');
-    this.logger.warn(
-      'All repository methods are currently stubs - implement after Prisma setup',
-    );
-  }
+  constructor(private readonly prisma: PrismaService) {}
 
-  // ===================================================================
-  // IMPLEMENTATION STATUS TRACKER
-  // ===================================================================
+  /**
+   * Create a new person in the database
+   */
+  async save(person: Person, transaction?: ITransaction): Promise<Person> {
+    this.logger.debug(`Saving person: ${person.id.getValue()}`);
 
-  private notImplemented(methodName: string): never {
-    const message = `${methodName} not yet implemented - Prisma setup required`;
-    this.logger.error(message);
-    throw new RepositoryException(message, methodName, 'Person');
-  }
+    try {
+      const personData = {
+        // Use the person's CID directly
+        id: person.id.getValue(),
+        firstName: person.name.firstName,
+        middleName: person.name.middleName,
+        lastName: person.name.lastName,
+        preferredName: person.name.preferredName,
+        email: person.email.getValue(),
+        phone: person.primaryPhone.number,
+        phoneCountryCode: person.primaryPhone.countryCode,
+        dateOfBirth: person.age.dateOfBirth,
+        gender: this.mapGenderToPrisma(person.gender.gender), // Map to Prisma Gender enum
+        addressLine1: person.primaryAddress.addressLine1,
+        addressLine2: person.primaryAddress.addressLine2,
+        city: person.primaryAddress.city,
+        state: person.primaryAddress.stateOrProvince,
+        postalCode: person.primaryAddress.postalCode,
+        country: person.primaryAddress.country as PrismaSupportedCountry, // Should match Prisma SupportedCountry enum
+        profileVisibility: person.privacySettings.employerVisibility
+          ? PrismaProfileVisibility.PUBLIC
+          : PrismaProfileVisibility.PRIVATE,
+        dataSharing: JSON.stringify({}),
+        // Map privacy settings to the privacySettings JSON field
+        privacySettings: JSON.stringify({
+          marketingConsent: person.privacySettings.marketingConsent,
+          dataProcessingConsent: person.privacySettings.dataProcessingConsent,
+          employerVisibility: person.privacySettings.employerVisibility,
+        }),
+        kycStatus: PrismaKYCStatus.PENDING, // Use the KYCStatus enum
+        emailVerified: person.isVerified,
+        phoneVerified: person.primaryPhone.isVerified,
+      };
 
-  // ===================================================================
-  // BASE REPOSITORY IMPLEMENTATION (STUBS)
-  // ===================================================================
+      const savedPerson = await this.prisma.person.create({
+        data: personData,
+      });
 
-  async findById(id: PersonID): Promise<Person | null> {
-    this.logger.debug(`Stub: Finding person by ID: ${id.getValue()}`);
-    this.notImplemented('findById');
-  }
+      this.logger.log(`✅ Person saved successfully: ${person.id.getValue()}`);
 
-  async findByIdOrThrow(id: PersonID): Promise<Person> {
-    const person = await this.findById(id);
-    if (!person) {
-      throw new ResourceNotFoundException('Person', id.getValue());
+      // Return the original person for now (should reconstruct from saved data)
+      return person;
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to save person: ${person.id.getValue()}`,
+        error,
+      );
+
+      if (error.code === 'P2002') {
+        throw new ValidationException(
+          `Person with email or phone already exists`,
+          'save',
+          'UNIQUE_CONSTRAINT',
+        );
+      }
+
+      throw new RepositoryException(
+        `Failed to save person: ${error.message}`,
+        'save',
+        'DATABASE_ERROR',
+      );
     }
-    return person;
   }
 
-  async findByIds(ids: PersonID[]): Promise<Person[]> {
-    this.logger.debug(`Stub: Finding ${ids.length} persons by IDs`);
-    this.notImplemented('findByIds');
+  /**
+   * Find person by ID
+   */
+  async findById(
+    id: PersonID,
+    transaction?: ITransaction,
+  ): Promise<Person | null> {
+    this.logger.debug(`Finding person by ID: ${id.getValue()}`);
+
+    try {
+      // Use the CID directly for database query
+      const personData = await this.prisma.person.findUnique({
+        where: {
+          id: id.getValue(),
+          deletedAt: null,
+        },
+      });
+
+      if (!personData) {
+        return null;
+      }
+
+      // Return reconstructed person
+      return this.reconstructPerson(personData);
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to find person by ID: ${id.getValue()}`,
+        error,
+      );
+      throw new RepositoryException(
+        `Failed to find person: ${error.message}`,
+        'findById',
+        'DATABASE_ERROR',
+      );
+    }
   }
 
-  async findAll(options?: FindAllOptions): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Finding all persons with options:`, options);
-    this.notImplemented('findAll');
+  /**
+   * Find person by email
+   */
+  async findByEmail(
+    email: Email,
+    transaction?: ITransaction,
+  ): Promise<Person | null> {
+    this.logger.debug(`Finding person by email: ${email.getValue()}`);
+
+    try {
+      const personData = await this.prisma.person.findFirst({
+        where: {
+          email: email.getValue(),
+          deletedAt: null,
+        },
+      });
+
+      if (!personData) {
+        return null;
+      }
+
+      return this.reconstructPerson(personData);
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to find person by email: ${email.getValue()}`,
+        error,
+      );
+      throw new RepositoryException(
+        `Failed to find person by email: ${error.message}`,
+        'findByEmail',
+        'DATABASE_ERROR',
+      );
+    }
   }
 
-  async save(entity: Person): Promise<Person> {
-    this.logger.debug(`Stub: Saving person: ${entity.getId().getValue()}`);
-    this.notImplemented('save');
+  /**
+   * Reconstruct Person from database data
+   */
+  private reconstructPerson(data: any): Person {
+    // Use the CID directly from the database
+    const personId = PersonID.fromString(data.id);
+
+    const name = PersonName.create({
+      firstName: data.firstName,
+      middleName: data.middleName,
+      lastName: data.lastName,
+      preferredName: data.preferredName,
+    });
+    const email = Email.create(data.email);
+    const primaryPhone = PhoneNumber.create({
+      number: data.phone,
+      countryCode: data.phoneCountryCode,
+      type: PhoneType.MOBILE,
+      isPrimary: true,
+      isVerified: data.phoneVerified || false,
+    });
+    const age = PersonAge.fromDateOfBirth(data.dateOfBirth);
+    const gender = Gender.create({
+      gender: this.mapPrismaToGender(data.gender),
+      pronouns: 'they/them', // Default pronouns
+      isPublic: true,
+    });
+
+    const primaryAddress = Address.create({
+      addressLine1: data.addressLine1 || '',
+      addressLine2: data.addressLine2,
+      city: data.city || '',
+      stateOrProvince: data.state || '', // Fix: database column is 'state', not 'stateOrProvince'
+      postalCode: data.postalCode || '',
+      country: (data.country as SupportedCountry) || SupportedCountry.INDIA,
+      addressType: AddressType.HOME,
+      isPrimary: true,
+    });
+
+    const privacySettings = {
+      dataProcessingConsent: data.termsAccepted || false,
+      marketingConsent: data.marketingOptIn || false,
+      employerVisibility: data.profileVisibility === 'PUBLIC',
+      aiMatchingConsent: true,
+      assessmentSharingConsent: true,
+      phoneVisibility: VisibilityLevel.EMPLOYERS_ONLY,
+      emailVisibility: VisibilityLevel.EMPLOYERS_ONLY,
+      addressVisibility: VisibilityLevel.PRIVATE,
+      skillPassportVisibility: VisibilityLevel.EMPLOYERS_ONLY,
+      dataRetentionPreference: DataRetentionPreference.KEEP_INDEFINITELY,
+    };
+
+    // Use fromPersistence to reconstruct
+    return Person.fromPersistence({
+      id: personId,
+      name,
+      age,
+      gender,
+      email,
+      primaryPhone,
+      primaryAddress,
+      preferredLanguage: PreferredLanguage.ENGLISH,
+      timezone: 'Asia/Kolkata',
+      privacySettings,
+      isVerified: data.emailVerified || false,
+      kycStatus: 'NOT_STARTED' as any,
+      status: 'ACTIVE' as any,
+      version: data.version || 1,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+    });
   }
 
-  async saveMany(entities: Person[]): Promise<Person[]> {
-    this.logger.debug(`Stub: Saving ${entities.length} persons`);
-    this.notImplemented('saveMany');
+  /**
+   * Map domain GenderType to Prisma Gender enum
+   */
+  private mapGenderToPrisma(genderType: GenderType): PrismaGender {
+    switch (genderType) {
+      case GenderType.MALE:
+        return PrismaGender.MALE;
+      case GenderType.FEMALE:
+        return PrismaGender.FEMALE;
+      case GenderType.NON_BINARY:
+        return PrismaGender.NON_BINARY;
+      case GenderType.PREFER_NOT_TO_SAY:
+        return PrismaGender.PREFER_NOT_TO_SAY;
+      default:
+        return PrismaGender.OTHER;
+    }
   }
 
-  async delete(id: PersonID): Promise<boolean> {
-    this.logger.debug(`Stub: Deleting person: ${id.getValue()}`);
-    this.notImplemented('delete');
+  /**
+   * Map Prisma Gender to domain GenderType
+   */
+  private mapPrismaToGender(prismaGender: PrismaGender): GenderType {
+    switch (prismaGender) {
+      case PrismaGender.MALE:
+        return GenderType.MALE;
+      case PrismaGender.FEMALE:
+        return GenderType.FEMALE;
+      case PrismaGender.NON_BINARY:
+        return GenderType.NON_BINARY;
+      case PrismaGender.PREFER_NOT_TO_SAY:
+        return GenderType.PREFER_NOT_TO_SAY;
+      default:
+        return GenderType.PREFER_NOT_TO_SAY;
+    }
   }
 
-  async softDelete(id: PersonID): Promise<boolean> {
-    this.logger.debug(`Stub: Soft deleting person: ${id.getValue()}`);
-    this.notImplemented('softDelete');
-  }
+  // Stub implementations for interface compatibility
+  async update(person: Person, transaction?: ITransaction): Promise<Person> {
+    this.logger.log(`Updating person: ${person.id.getValue()}`);
 
-  async exists(id: PersonID): Promise<boolean> {
-    this.logger.debug(`Stub: Checking existence of person: ${id.getValue()}`);
-    this.notImplemented('exists');
-  }
+    try {
+      // Use the CID directly from the person ID
+      const personData = {
+        firstName: person.name.firstName,
+        middleName: person.name.middleName,
+        lastName: person.name.lastName,
+        preferredName: person.name.preferredName,
+        email: person.email.getValue(),
+        phone: person.primaryPhone.number,
+        phoneCountryCode: person.primaryPhone.countryCode,
+        phoneVerified: person.primaryPhone.isVerified,
+        dateOfBirth: person.age.dateOfBirth,
+        gender: this.mapGenderToPrisma(person.gender.gender),
+        addressLine1: person.primaryAddress.addressLine1,
+        addressLine2: person.primaryAddress.addressLine2,
+        city: person.primaryAddress.city,
+        state: person.primaryAddress.stateOrProvince, // Use 'state' field instead of 'stateOrProvince'
+        postalCode: person.primaryAddress.postalCode,
+        country: person.primaryAddress.country as PrismaSupportedCountry,
+        profileVisibility: person.privacySettings.employerVisibility
+          ? ('PUBLIC' as PrismaProfileVisibility)
+          : ('PRIVATE' as PrismaProfileVisibility),
+        // Store privacy settings as JSON
+        privacySettings: JSON.stringify({
+          marketingConsent: person.privacySettings.marketingConsent,
+          dataProcessingConsent: person.privacySettings.dataProcessingConsent,
+          employerVisibility: person.privacySettings.employerVisibility,
+        }),
+        updatedAt: new Date(),
+      };
 
-  async count(criteria?: Record<string, unknown>): Promise<number> {
-    this.logger.debug(`Stub: Counting persons with criteria:`, criteria);
-    this.notImplemented('count');
-  }
+      const updatedPersonData = await this.prisma.person.update({
+        where: { id: person.id.getValue() },
+        data: personData,
+      });
 
-  async executeQuery<TResult = unknown>(
-    query: string | object,
-    parameters?: Record<string, unknown>,
-  ): Promise<TResult[]> {
-    this.logger.debug(`Stub: Executing custom query`);
-    this.notImplemented('executeQuery');
-  }
-
-  async beginTransaction(): Promise<ITransaction> {
-    this.logger.debug(`Stub: Beginning transaction`);
-    this.notImplemented('beginTransaction');
-  }
-
-  async withTransaction<TResult>(
-    operation: (transaction: any) => Promise<TResult>,
-  ): Promise<TResult> {
-    this.logger.debug(`Stub: Executing with transaction`);
-    this.notImplemented('withTransaction');
-  }
-
-  // ===================================================================
-  // PERSON-SPECIFIC IDENTITY QUERIES (STUBS)
-  // ===================================================================
-
-  async findByEmail(email: Email): Promise<Person | null> {
-    this.logger.debug(`Stub: Finding person by email: ${email.getValue()}`);
-    this.notImplemented('findByEmail');
+      return this.reconstructPerson(updatedPersonData);
+    } catch (error) {
+      this.logger.error(
+        `Failed to update person: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to update person: ${error.message}`,
+        'update',
+        'Person',
+        error,
+      );
+    }
   }
 
   async findByPhone(phone: PhoneNumber): Promise<Person | null> {
-    this.logger.debug(
-      `Stub: Finding person by phone: ${phone.internationalFormat}`,
+    this.logger.log(`Finding person by phone: ${phone.number}`);
+
+    try {
+      const personData = await this.prisma.person.findFirst({
+        where: {
+          phone: phone.number,
+          phoneCountryCode: phone.countryCode,
+          accountStatus: 'ACTIVE',
+        },
+      });
+
+      if (!personData) {
+        return null;
+      }
+
+      return this.reconstructPerson(personData);
+    } catch (error) {
+      this.logger.error(
+        `Failed to find person by phone: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to find person by phone: ${error.message}`,
+        'findByPhone',
+        'Person',
+        error,
+      );
+    }
+  }
+
+  async delete(id: PersonID): Promise<boolean> {
+    this.logger.log(`Soft deleting person: ${id.getValue()}`);
+
+    try {
+      // Soft delete by marking account as INACTIVE
+      await this.prisma.person.update({
+        where: { id: id.getValue() },
+        data: {
+          accountStatus: 'INACTIVE',
+          deletedAt: new Date(),
+        },
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to delete person: ${error.message}`,
+        error.stack,
+      );
+      if (error.code === 'P2025') {
+        // Record not found
+        return false;
+      }
+      throw new RepositoryException(
+        `Failed to delete person: ${error.message}`,
+        'delete',
+        'Person',
+        error,
+      );
+    }
+  }
+
+  async exists(id: PersonID): Promise<boolean> {
+    try {
+      const count = await this.prisma.person.count({
+        where: {
+          id: id.getValue(),
+          accountStatus: 'ACTIVE',
+        },
+      });
+      return count > 0;
+    } catch (error) {
+      this.logger.error(
+        `Failed to check person existence: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to check person existence: ${error.message}`,
+        'exists',
+        'Person',
+        error,
+      );
+    }
+  }
+
+  async count(): Promise<number> {
+    try {
+      return await this.prisma.person.count({
+        where: { accountStatus: 'ACTIVE' },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to count persons: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to count persons: ${error.message}`,
+        'count',
+        'Person',
+        error,
+      );
+    }
+  }
+
+  async findAll(options?: FindAllOptions): Promise<PaginatedResult<Person>> {
+    this.logger.log(
+      `Finding all persons with options: ${JSON.stringify(options)}`,
     );
-    this.notImplemented('findByPhone');
-  }
 
-  async findByEmailOrPhone(
-    email: Email,
-    phone: PhoneNumber,
-  ): Promise<Person | null> {
-    this.logger.debug(`Stub: Finding person by email or phone`);
-    this.notImplemented('findByEmailOrPhone');
-  }
+    try {
+      const page = options?.page || 1;
+      const limit = options?.limit || 20;
+      const skip = (page - 1) * limit;
 
-  async emailExists(email: Email): Promise<boolean> {
-    this.logger.debug(`Stub: Checking email existence: ${email.getValue()}`);
-    this.notImplemented('emailExists');
-  }
+      // Build where clause
+      const where: any = {
+        accountStatus: 'ACTIVE',
+      };
 
-  async phoneExists(phone: PhoneNumber): Promise<boolean> {
-    this.logger.debug(
-      `Stub: Checking phone existence: ${phone.internationalFormat}`,
-    );
-    this.notImplemented('phoneExists');
-  }
+      // Add filters if provided in where clause
+      if (options?.where) {
+        const filter = options.where as any;
+        if (filter.country) {
+          where.country = filter.country;
+        }
+        if (filter.profileVisibility) {
+          where.profileVisibility = filter.profileVisibility;
+        }
+        if (filter.search) {
+          where.OR = [
+            { firstName: { contains: filter.search, mode: 'insensitive' } },
+            { lastName: { contains: filter.search, mode: 'insensitive' } },
+            { email: { contains: filter.search, mode: 'insensitive' } },
+          ];
+        }
+      }
 
-  // ===================================================================
-  // VERIFICATION & KYC QUERIES (STUBS)
-  // ===================================================================
+      // Build order clause
+      const orderBy: any = {};
+      if (options?.sortBy) {
+        orderBy[options.sortBy] = options.sortOrder || 'desc';
+      } else {
+        orderBy.createdAt = 'desc';
+      }
 
-  async findByVerificationStatus(
-    isVerified: boolean,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(
-      `Stub: Finding persons by verification status: ${isVerified}`,
-    );
-    this.notImplemented('findByVerificationStatus');
-  }
+      // Execute queries
+      const [personsData, total] = await Promise.all([
+        this.prisma.person.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+        }),
+        this.prisma.person.count({ where }),
+      ]);
 
-  async findByKYCStatus(
-    kycStatus: string,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Finding persons by KYC status: ${kycStatus}`);
-    this.notImplemented('findByKYCStatus');
-  }
+      // Reconstruct persons
+      const persons = personsData.map((data) => this.reconstructPerson(data));
 
-  async findPendingVerification(
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Finding persons pending verification`);
-    this.notImplemented('findPendingVerification');
-  }
+      const totalPages = Math.ceil(total / limit);
 
-  // ===================================================================
-  // SKILL PASSPORT QUERIES (STUBS)
-  // ===================================================================
-
-  async findWithSkillPassports(
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Finding persons with skill passports`);
-    this.notImplemented('findWithSkillPassports');
-  }
-
-  async findByCCISLevel(
-    competencyType: string,
-    ccisLevel: number,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(
-      `Stub: Finding persons by CCIS level: ${competencyType}/${ccisLevel}`,
-    );
-    this.notImplemented('findByCCISLevel');
-  }
-
-  async findByMinimumCCISLevel(
-    minimumLevel: number,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(
-      `Stub: Finding persons by minimum CCIS level: ${minimumLevel}`,
-    );
-    this.notImplemented('findByMinimumCCISLevel');
-  }
-
-  // ===================================================================
-  // DEMOGRAPHIC & GEOGRAPHIC QUERIES (STUBS)
-  // ===================================================================
-
-  async findByAgeRange(
-    minAge: number,
-    maxAge: number,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(
-      `Stub: Finding persons by age range: ${minAge}-${maxAge}`,
-    );
-    this.notImplemented('findByAgeRange');
-  }
-
-  async findByGender(
-    gender: GenderType,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Finding persons by gender: ${gender}`);
-    this.notImplemented('findByGender');
-  }
-
-  async findByCountry(
-    country: SupportedCountry,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Finding persons by country: ${country}`);
-    this.notImplemented('findByCountry');
-  }
-
-  async findByCity(
-    country: SupportedCountry,
-    city: string,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Finding persons by city: ${city}, ${country}`);
-    this.notImplemented('findByCity');
-  }
-
-  // ===================================================================
-  // ACTIVITY & ENGAGEMENT QUERIES (STUBS)
-  // ===================================================================
-
-  async findRecentlyActive(
-    daysBack: number,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(
-      `Stub: Finding recently active persons: ${daysBack} days back`,
-    );
-    this.notImplemented('findRecentlyActive');
-  }
-
-  async findInactiveUsers(
-    daysInactive: number,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(
-      `Stub: Finding inactive users: ${daysInactive} days inactive`,
-    );
-    this.notImplemented('findInactiveUsers');
-  }
-
-  async findByRegistrationDateRange(
-    startDate: Date,
-    endDate: Date,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(
-      `Stub: Finding persons by registration date range: ${startDate} to ${endDate}`,
-    );
-    this.notImplemented('findByRegistrationDateRange');
-  }
-
-  // ===================================================================
-  // ADVANCED ANALYTICS QUERIES (STUBS)
-  // ===================================================================
-
-  async getCompetencyLevelDistribution(
-    competencyType?: string,
-    country?: SupportedCountry,
-  ): Promise<CompetencyLevelStats> {
-    this.logger.debug(`Stub: Getting competency level distribution`);
-    this.notImplemented('getCompetencyLevelDistribution');
-  }
-
-  async getDemographicStats(
-    country?: SupportedCountry,
-  ): Promise<DemographicStats> {
-    this.logger.debug(
-      `Stub: Getting demographic stats for: ${country || 'all countries'}`,
-    );
-    this.notImplemented('getDemographicStats');
-  }
-
-  async getVerificationMetrics(dateRange?: {
-    startDate: Date;
-    endDate: Date;
-  }): Promise<VerificationMetrics> {
-    this.logger.debug(`Stub: Getting verification metrics`);
-    this.notImplemented('getVerificationMetrics');
-  }
-
-  // ===================================================================
-  // BULK OPERATIONS (STUBS)
-  // ===================================================================
-
-  async bulkUpdateVerificationStatus(
-    personIds: PersonID[],
-    isVerified: boolean,
-    verifiedBy: PersonID,
-  ): Promise<number> {
-    this.logger.debug(
-      `Stub: Bulk updating verification status for ${personIds.length} persons`,
-    );
-    this.notImplemented('bulkUpdateVerificationStatus');
-  }
-
-  async bulkUpdateKYCStatus(
-    personIds: PersonID[],
-    kycStatus: string,
-    updatedBy: PersonID,
-  ): Promise<number> {
-    this.logger.debug(
-      `Stub: Bulk updating KYC status for ${personIds.length} persons`,
-    );
-    this.notImplemented('bulkUpdateKYCStatus');
-  }
-
-  // ===================================================================
-  // SEARCH OPERATIONS (STUBS)
-  // ===================================================================
-
-  async searchPersons(
-    searchTerm: string,
-    options?: SearchOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Searching persons with term: ${searchTerm}`);
-    this.notImplemented('searchPersons');
-  }
-
-  async advancedSearch(
-    criteria: AdvancedSearchCriteria,
-    options?: FindAllOptions,
-  ): Promise<PaginatedResult<Person>> {
-    this.logger.debug(`Stub: Advanced search with criteria:`, criteria);
-    this.notImplemented('advancedSearch');
-  }
-
-  // ===================================================================
-  // PRIVATE HELPER METHODS (STUBS)
-  // ===================================================================
-
-  /**
-   * TODO: Converts Prisma data to Person domain entity
-   *
-   * This method will need to:
-   * 1. Map Prisma database fields to domain value objects
-   * 2. Reconstruct PersonName, PersonAge, Gender, Address, etc.
-   * 3. Rebuild the complex SkillPassport structure
-   * 4. Handle null/undefined values gracefully
-   * 5. Validate data integrity during reconstruction
-   */
-  private toDomainEntity(data: any): Person {
-    this.logger.debug('TODO: Implement toDomainEntity mapping');
-    throw new RepositoryException(
-      'Domain entity mapping not yet implemented',
-      'toDomainEntity',
-      'Person',
-    );
+      return {
+        data: persons,
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrevious: page > 1,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to find all persons: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to find all persons: ${error.message}`,
+        'findAll',
+        'Person',
+        error,
+      );
+    }
   }
 
   /**
-   * TODO: Converts Person domain entity to Prisma data
-   *
-   * This method will need to:
-   * 1. Extract values from domain value objects
-   * 2. Serialize complex SkillPassport to JSON
-   * 3. Handle nested objects and arrays
-   * 4. Ensure data format matches Prisma schema
-   * 5. Include version for optimistic concurrency control
+   * Find deleted person by email (for reactivation)
    */
-  private toPrismaData(entity: Person): any {
-    this.logger.debug('TODO: Implement toPrismaData mapping');
-    throw new RepositoryException(
-      'Prisma data mapping not yet implemented',
-      'toPrismaData',
-      'Person',
-    );
+  async findDeletedByEmail(email: string): Promise<Person | null> {
+    this.logger.debug(`Finding deleted person by email: ${email}`);
+
+    try {
+      const personData = await this.prisma.person.findFirst({
+        where: {
+          email: email,
+          deletedAt: { not: null },
+        },
+      });
+
+      if (!personData) {
+        return null;
+      }
+
+      return this.reconstructPerson(personData);
+    } catch (error) {
+      this.logger.error(
+        `Failed to find deleted person by email: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to find deleted person by email: ${error.message}`,
+        'findDeletedByEmail',
+        'Person',
+        error,
+      );
+    }
   }
 
   /**
-   * TODO: Gets default include clauses for person queries
-   *
-   * Should include:
-   * - Skill passport data
-   * - Address relations
-   * - Emergency contacts
-   * - Social profiles
-   * - Privacy settings
+   * Find deleted person by phone (for reactivation)
    */
-  private getDefaultIncludes(): any {
-    return {
-      // TODO: Define default relations to include when Prisma schema is ready
-      // skillPassport: true,
-      // addresses: true,
-      // emergencyContacts: true,
-      // socialProfiles: true,
-      // privacySettings: true,
-    };
+  async findDeletedByPhone(phone: string): Promise<Person | null> {
+    this.logger.debug(`Finding deleted person by phone: ${phone}`);
+
+    try {
+      const personData = await this.prisma.person.findFirst({
+        where: {
+          phone: phone,
+          deletedAt: { not: null },
+        },
+      });
+
+      if (!personData) {
+        return null;
+      }
+
+      return this.reconstructPerson(personData);
+    } catch (error) {
+      this.logger.error(
+        `Failed to find deleted person by phone: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to find deleted person by phone: ${error.message}`,
+        'findDeletedByPhone',
+        'Person',
+        error,
+      );
+    }
   }
 
   /**
-   * TODO: Builds Prisma where clause from generic criteria
-   *
-   * Should handle:
-   * - Simple field filters
-   * - Date range queries
-   * - JSON field queries (for skill passport)
-   * - Array contains operations
-   * - Complex AND/OR logic
+   * Reactivate a deleted person account
    */
-  private buildWhereClause(criteria: Record<string, unknown>): any {
-    this.logger.debug('TODO: Implement generic where clause builder');
-    return criteria; // Placeholder
-  }
+  async reactivate(person: Person): Promise<Person> {
+    this.logger.log(`Reactivating person: ${person.id.getValue()}`);
 
-  /**
-   * TODO: Builds Prisma include clause from field names
-   *
-   * Should map:
-   * - 'skillPassport' -> { skillPassport: true }
-   * - 'addresses' -> { addresses: true }
-   * - 'emergencyContacts' -> { emergencyContacts: true }
-   * - Nested includes for complex relations
-   */
-  private buildIncludeClause(include: string[]): any {
-    this.logger.debug('TODO: Implement include clause builder');
-    return {}; // Placeholder
+    try {
+      // Clear deletion timestamp and reactivate account
+      const updatedPersonData = await this.prisma.person.update({
+        where: { id: person.id.getValue() },
+        data: {
+          deletedAt: null,
+          accountStatus: 'ACTIVE',
+          updatedAt: new Date(),
+          version: { increment: 1 },
+          // Reset verification status for security
+          emailVerified: false,
+          phoneVerified: false,
+          emailVerifiedAt: null,
+          phoneVerifiedAt: null,
+        },
+      });
+
+      return this.reconstructPerson(updatedPersonData);
+    } catch (error) {
+      this.logger.error(
+        `Failed to reactivate person: ${error.message}`,
+        error.stack,
+      );
+      throw new RepositoryException(
+        `Failed to reactivate person: ${error.message}`,
+        'reactivate',
+        'Person',
+        error,
+      );
+    }
   }
 }

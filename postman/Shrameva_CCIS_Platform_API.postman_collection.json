@@ -1,0 +1,636 @@
+{
+  "info": {
+    "name": "Shrameva CCIS Platform API",
+    "description": "Complete API collection for Shrameva Competency and Career Intelligence System (CCIS) Platform\n\nThis collection includes all endpoints for:\n- Person Management\n- Assessment Engine\n- Session Management\n- Analytics & Reports\n\nBase URL: http://localhost:3005\nDocs: http://localhost:3005/api",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3005",
+      "type": "string"
+    },
+    {
+      "key": "personId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "sessionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏠 Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👤 Person Management",
+      "item": [
+        {
+          "name": "Create Person",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.to.have.status(201)) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('personId', response.id);",
+                  "    console.log('Person ID set to:', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alex\",\n  \"lastName\": \"Johnson\",\n  \"email\": \"alex.johnson.test@example.com\",\n  \"phone\": \"+919876543299\",\n  \"country\": \"INDIA\",\n  \"dateOfBirth\": \"1995-03-15\",\n  \"gender\": \"NON_BINARY\",\n  \"address\": {\n    \"street\": \"123 Tech Street\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"postalCode\": \"400001\",\n    \"country\": \"INDIA\"\n  },\n  \"profileVisibility\": \"PUBLIC\",\n  \"marketingConsent\": true,\n  \"dataProcessingConsent\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Persons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/persons?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Person by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "{{personId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Person",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Alex\",\n  \"lastName\": \"Johnson Updated\",\n  \"profileVisibility\": \"PRIVATE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "{{personId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Person",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "{{personId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Analytics Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/persons/analytics/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "analytics", "summary"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🎯 Assessment Engine",
+      "item": [
+        {
+          "name": "Start Assessment Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.to.have.status(201)) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('sessionId', response.sessionId);",
+                  "    console.log('Session ID set to:', response.sessionId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personId\": \"{{personId}}\",\n  \"assessmentType\": \"comprehensive\",\n  \"culturalContext\": \"INDIA\",\n  \"languagePreference\": \"en\",\n  \"maxDuration\": 60,\n  \"assessmentPurpose\": \"initial_evaluation\",\n  \"accessibilityNeeds\": [],\n  \"targetCompetencies\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assessment/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Task Interaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\",\n  \"taskId\": \"task-001\",\n  \"interactionType\": \"task_attempt\",\n  \"competencyType\": \"communication\",\n  \"startTime\": \"2025-09-03T10:30:00Z\",\n  \"endTime\": \"2025-09-03T10:32:00Z\",\n  \"interactionData\": {\n    \"response\": \"Sample response text\",\n    \"timeSpent\": 120,\n    \"attemptNumber\": 1,\n    \"confidence\": 0.75,\n    \"completionStatus\": \"completed\",\n    \"userInputs\": {\n      \"text_input\": \"This is my answer\",\n      \"multiple_choice\": \"option_a\"\n    },\n    \"qualityIndicators\": {\n      \"accuracy\": 0.85,\n      \"completeness\": 0.90,\n      \"appropriateness\": 0.80\n    },\n    \"outcome\": {\n      \"success\": true,\n      \"score\": 85,\n      \"feedback\": \"Good response with clear communication\"\n    }\n  },\n  \"behavioralSignals\": {\n    \"hintsUsed\": 1,\n    \"hintTypes\": [\"conceptual\"],\n    \"errorsCommitted\": 0,\n    \"selfCorrectedErrors\": 0,\n    \"timeSpentReading\": 30000,\n    \"timeSpentThinking\": 45000,\n    \"timeSpentExecuting\": 40000,\n    \"timeSpentReviewing\": 5000,\n    \"responseTime\": 120000,\n    \"keyboardDynamics\": {\n      \"avgKeyInterval\": 150,\n      \"typingSpeed\": 45,\n      \"backspaceFrequency\": 3\n    },\n    \"focusEvents\": {\n      \"focusLost\": 2,\n      \"timeOutOfFocus\": 15000,\n      \"tabSwitches\": 1\n    },\n    \"navigationPattern\": {\n      \"backtrackCount\": 3,\n      \"hesitationTime\": 25000,\n      \"scrollBehavior\": \"linear\"\n    },\n    \"cognitiveLoad\": {\n      \"mentalEffort\": 0.7,\n      \"cognitiveStrain\": 0.3,\n      \"focusIntensity\": 0.8\n    }\n  },\n  \"metadata\": {\n    \"taskDifficulty\": \"intermediate\",\n    \"scaffoldingLevel\": 2,\n    \"priorAttempts\": 0,\n    \"culturalContext\": \"INDIA\",\n    \"languagePreference\": \"en\",\n    \"deviceType\": \"desktop\",\n    \"screenResolution\": \"1920x1080\",\n    \"browserInfo\": \"Chrome/115.0\",\n    \"networkQuality\": \"excellent\",\n    \"timeOfDay\": \"10:30\",\n    \"dayOfWeek\": \"Monday\",\n    \"learningModality\": \"individual\",\n    \"environmentalDistractions\": [],\n    \"accessibilityFeatures\": []\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assessment/{{sessionId}}/interact",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "{{sessionId}}", "interact"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Assessment Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completionReason\": \"natural_completion\",\n  \"finalFeedback\": \"Assessment completed successfully\",\n  \"overallSatisfaction\": 4,\n  \"technicalIssues\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/assessment/{{sessionId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "{{sessionId}}", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Assessment Session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assessment/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "{{sessionId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Live Session Data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assessment/{{sessionId}}/live",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "{{sessionId}}", "live"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Person Progress",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assessment/person/{{personId}}/progress?timeRange=last_30_days",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "person", "{{personId}}", "progress"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "last_30_days"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Assessment Session",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/assessment/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["assessment", "{{sessionId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "⏯️ Session Management",
+      "item": [
+        {
+          "name": "Get Session Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Pause Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"technical_difficulty\",\n  \"metadata\": {\n    \"deviceIssue\": \"network_connectivity\",\n    \"estimatedResumeTime\": \"2025-09-03T11:00:00Z\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/pause",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "pause"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resumeConditions\": {\n    \"networkQuality\": \"good\",\n    \"deviceStability\": true\n  },\n  \"continuityCheck\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "resume"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Extend Session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"additionalTime\": 30,\n  \"reason\": \"complex_task_requires_more_time\",\n  \"justification\": \"Student is showing good progress but needs more time to complete the complex problem-solving task\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/extend",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "extend"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Session Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/analytics?live=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "analytics"],
+              "query": [
+                {
+                  "key": "live",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trigger Intervention",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interventionType\": \"scaffolding_increase\",\n  \"reason\": \"student_struggling\",\n  \"parameters\": {\n    \"newScaffoldingLevel\": 4,\n    \"supportType\": \"hint_provision\",\n    \"motivationalMessage\": \"You're doing great! Let's try a different approach.\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/intervention",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "intervention"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resetReason\": \"system_error\",\n  \"preserveProgress\": false,\n  \"notifyStakeholders\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/session/{{sessionId}}/reset",
+              "host": ["{{baseUrl}}"],
+              "path": ["session", "{{sessionId}}", "reset"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 Analytics & Reports",
+      "item": [
+        {
+          "name": "Get Person Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/person/{{personId}}?timeRange=last_30_days&includeComparisons=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "person", "{{personId}}"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "last_30_days"
+                },
+                {
+                  "key": "includeComparisons",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Cohort Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/cohort/cohort-123?metrics=performance,engagement&timeRange=last_quarter",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "cohort", "cohort-123"],
+              "query": [
+                {
+                  "key": "metrics",
+                  "value": "performance,engagement"
+                },
+                {
+                  "key": "timeRange",
+                  "value": "last_quarter"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Institution Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/institution/inst-456?metrics=all&aggregationLevel=department",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "institution", "inst-456"],
+              "query": [
+                {
+                  "key": "metrics",
+                  "value": "all"
+                },
+                {
+                  "key": "aggregationLevel",
+                  "value": "department"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Competency Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/competency/communication?populationFilter=age:18-25&benchmarkType=national",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "competency", "communication"],
+              "query": [
+                {
+                  "key": "populationFilter",
+                  "value": "age:18-25"
+                },
+                {
+                  "key": "benchmarkType",
+                  "value": "national"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Trends Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/trends?timeRange=last_year&granularity=monthly&includeForecasting=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "trends"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "last_year"
+                },
+                {
+                  "key": "granularity",
+                  "value": "monthly"
+                },
+                {
+                  "key": "includeForecasting",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/analytics/reports?reportType=placement_readiness&format=json&includeCharts=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "reports"],
+              "query": [
+                {
+                  "key": "reportType",
+                  "value": "placement_readiness"
+                },
+                {
+                  "key": "format",
+                  "value": "json"
+                },
+                {
+                  "key": "includeCharts",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Custom Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"queryName\": \"custom_competency_analysis\",\n  \"dimensions\": [\"competency\", \"cultural_context\", \"age_group\"],\n  \"metrics\": [\"completion_rate\", \"confidence_score\", \"improvement_rate\"],\n  \"filters\": {\n    \"timeRange\": {\n      \"startDate\": \"2025-01-01\",\n      \"endDate\": \"2025-09-03\"\n    },\n    \"culturalContext\": [\"INDIA\", \"UAE\"],\n    \"ageGroup\": \"18-25\",\n    \"competencyTypes\": [\"communication\", \"problem_solving\", \"teamwork\"]\n  },\n  \"aggregation\": {\n    \"groupBy\": [\"competency\", \"cultural_context\"],\n    \"orderBy\": \"completion_rate\",\n    \"sortOrder\": \"desc\",\n    \"limit\": 100\n  },\n  \"outputFormat\": {\n    \"includeCharts\": true,\n    \"chartTypes\": [\"bar\", \"line\", \"heatmap\"],\n    \"exportFormats\": [\"json\", \"csv\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/analytics/custom",
+              "host": ["{{baseUrl}}"],
+              "path": ["analytics", "custom"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
