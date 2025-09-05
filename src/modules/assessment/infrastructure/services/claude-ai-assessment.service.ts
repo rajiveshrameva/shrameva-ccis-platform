@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IAIAssessmentService } from '../../application/assessment.service';
 import { CompetencyType } from '../../domain/value-objects/competency-type.value-object';
@@ -17,7 +17,7 @@ import { BehavioralSignals } from '../../domain/value-objects/behavioral-signals
 export class ClaudeAIAssessmentService implements IAIAssessmentService {
   private readonly apiKey: string;
   private readonly apiUrl = 'https://api.anthropic.com/v1/messages';
-  private readonly modelName = 'claude-3-5-sonnet-20241022';
+  private readonly modelName = 'claude-3-5-haiku-20241022';
   private readonly promptVersion = 'v1.0.0';
 
   constructor(private readonly configService: ConfigService) {

@@ -106,7 +106,7 @@ export class PersonController {
       const validationErrors = CreatePersonDto.validate(createPersonDto);
       if (validationErrors.length > 0) {
         throw new BadRequestException({
-          message: 'Validation failed',
+          message: 'Validation failed ' + validationErrors.join(', '),
           errors: validationErrors,
         });
       }
