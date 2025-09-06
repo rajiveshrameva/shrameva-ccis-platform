@@ -1,0 +1,805 @@
+{
+  "info": {
+    "name": "Shrameva CCIS Platform - Complete API Collection",
+    "description": "Complete collection of all Shrameva CCIS platform APIs including Person, Assessment, and Task management with AI-powered features",
+    "version": "3.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Person Management",
+      "description": "Complete Person domain APIs with skill passport management",
+      "item": [
+        {
+          "name": "Create Person",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Rajesh\",\n  \"lastName\": \"Kumar\",\n  \"email\": \"rajesh.kumar@example.com\",\n  \"phone\": \"+919876543210\",\n  \"age\": 22,\n  \"gender\": \"male\",\n  \"country\": \"INDIA\",\n  \"address\": {\n    \"street\": \"123 MG Road\",\n    \"city\": \"Bangalore\",\n    \"state\": \"Karnataka\",\n    \"postalCode\": \"560001\",\n    \"country\": \"INDIA\"\n  },\n  \"privacySettings\": {\n    \"dataSharing\": true,\n    \"profileVisibility\": \"public\",\n    \"marketingEmails\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons"]
+            },
+            "description": "Create a new person with skill passport"
+          }
+        },
+        {
+          "name": "Get All Persons",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/persons",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons"]
+            },
+            "description": "Get all persons with optional filtering"
+          }
+        },
+        {
+          "name": "Get Person by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "{{personId}}"]
+            },
+            "description": "Get specific person by ID"
+          }
+        },
+        {
+          "name": "Update Person",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Rajesh\",\n  \"lastName\": \"Kumar Updated\",\n  \"phone\": \"+919876543211\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "{{personId}}"]
+            },
+            "description": "Update person information"
+          }
+        },
+        {
+          "name": "Delete Person",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/persons/{{personId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "{{personId}}"]
+            },
+            "description": "Delete person"
+          }
+        },
+        {
+          "name": "Get Person Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/persons/analytics/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["persons", "analytics", "summary"]
+            },
+            "description": "Get person analytics summary"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Assessment Management",
+      "description": "CCIS Assessment APIs with behavioral signal collection",
+      "item": [
+        {
+          "name": "Create Assessment Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personId\": \"{{personId}}\",\n  \"competencyType\": \"COMMUNICATION\",\n  \"sessionType\": \"initial\",\n  \"culturalContext\": \"INDIA\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments"]
+            },
+            "description": "Create new assessment session"
+          }
+        },
+        {
+          "name": "Get Assessment by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/{{assessmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", "{{assessmentId}}"]
+            },
+            "description": "Get specific assessment session"
+          }
+        },
+        {
+          "name": "Get Assessments by Person",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/person/{{personId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", "person", "{{personId}}"]
+            },
+            "description": "Get all assessments for a person"
+          }
+        },
+        {
+          "name": "Get Latest Assessment by Competency",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/person/{{personId}}/latest/COMMUNICATION",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", "person", "{{personId}}", "latest", "COMMUNICATION"]
+            },
+            "description": "Get latest assessment for specific competency"
+          }
+        },
+        {
+          "name": "Get Assessment Review Queue",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/admin/review-queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", "admin", "review-queue"]
+            },
+            "description": "Get assessments pending review"
+          }
+        },
+        {
+          "name": "Review Assessment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"reviewNotes\": \"Assessment meets quality standards\",\n  \"reviewerId\": \"admin-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/{{assessmentId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", "{{assessmentId}}", "review"]
+            },
+            "description": "Review and approve/reject assessment"
+          }
+        },
+        {
+          "name": "Get Person Progression",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/person/{{personId}}/progression",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", "person", "{{personId}}", "progression"]
+            },
+            "description": "Get CCIS progression for person"
+          }
+        },
+        {
+          "name": "Get Assessment Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/assessments/analytics/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "assessments", "analytics", "summary"]
+            },
+            "description": "Get assessment analytics summary"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Task Management (Admin)",
+      "description": "Administrative task management APIs",
+      "item": [
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Email Communication Task\",\n  \"description\": \"Write a professional email to a client\",\n  \"instructions\": \"Compose a professional email addressing client concerns about project delays\",\n  \"competencyId\": \"comm-001\",\n  \"type\": \"WRITTEN_COMMUNICATION\",\n  \"category\": \"PROFESSIONAL_COMMUNICATION\",\n  \"difficulty\": \"INTERMEDIATE\",\n  \"estimatedDuration\": 30,\n  \"scaffoldingConfig\": {\n    \"hintsEnabled\": true,\n    \"examplesProvided\": true,\n    \"stepByStepGuidance\": false\n  },\n  \"assessmentCriteria\": [\n    {\n      \"criterion\": \"Clarity\",\n      \"weight\": 0.3,\n      \"description\": \"Message is clear and easy to understand\"\n    },\n    {\n      \"criterion\": \"Professionalism\",\n      \"weight\": 0.4,\n      \"description\": \"Tone and language are professional\"\n    },\n    {\n      \"criterion\": \"Completeness\",\n      \"weight\": 0.3,\n      \"description\": \"All required information is included\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            },
+            "description": "Create a new task"
+          }
+        },
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks?page=1&limit=10&type=WRITTEN_COMMUNICATION",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "type",
+                  "value": "WRITTEN_COMMUNICATION"
+                }
+              ]
+            },
+            "description": "Get all tasks with filtering options"
+          }
+        },
+        {
+          "name": "Get Task by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Get specific task by ID"
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Email Communication Task\",\n  \"description\": \"Updated description\",\n  \"difficulty\": \"ADVANCED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Update task information"
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Delete task"
+          }
+        },
+        {
+          "name": "Publish Task",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "publish"]
+            },
+            "description": "Publish task to make it available to students"
+          }
+        },
+        {
+          "name": "Unpublish Task",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/unpublish",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "unpublish"]
+            },
+            "description": "Unpublish task"
+          }
+        },
+        {
+          "name": "Search Tasks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/search/communication",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "search", "communication"]
+            },
+            "description": "Search tasks by term"
+          }
+        },
+        {
+          "name": "Get Tasks by Competency",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/competency/{{competencyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "competency", "{{competencyId}}"]
+            },
+            "description": "Get all tasks for a specific competency"
+          }
+        },
+        {
+          "name": "Calibrate Task Difficulty",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentSubmissions\": [\n    {\n      \"studentId\": \"student-001\",\n      \"score\": 85,\n      \"timeSpent\": 25,\n      \"hintsUsed\": 1\n    },\n    {\n      \"studentId\": \"student-002\",\n      \"score\": 72,\n      \"timeSpent\": 35,\n      \"hintsUsed\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/calibrate",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "calibrate"]
+            },
+            "description": "Calibrate task difficulty using IRT analysis"
+          }
+        },
+        {
+          "name": "Generate Task Variations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variationCount\": 3,\n  \"variationType\": \"contextual\",\n  \"preserveCore\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/variations",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "variations"]
+            },
+            "description": "Generate variations of a task for transfer learning"
+          }
+        },
+        {
+          "name": "Get Task Quality Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}/analytics/quality",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}", "analytics", "quality"]
+            },
+            "description": "Get task quality metrics and analytics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Student Task Interface",
+      "description": "Student-facing task APIs",
+      "item": [
+        {
+          "name": "Submit Task Solution",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"student-001\",\n  \"solution\": \"Dear Mr. Johnson,\\n\\nI hope this email finds you well. I am writing to address your concerns regarding the recent delays in the project timeline.\\n\\nThe delays were caused by unexpected technical challenges that required additional research and development time. Our team has been working diligently to resolve these issues while maintaining the quality standards you expect.\\n\\nI want to assure you that we are taking the following steps to get back on track:\\n1. Adding additional resources to the project team\\n2. Implementing daily progress reviews\\n3. Providing weekly status updates\\n\\nWe estimate that the project will be completed by [new date], which is only 2 weeks later than originally planned. We apologize for any inconvenience this may cause and appreciate your understanding.\\n\\nIf you have any questions or concerns, please don't hesitate to reach out to me directly.\\n\\nBest regards,\\n[Your name]\",\n  \"timeSpent\": 28,\n  \"hintsUsed\": 1,\n  \"behavioralSignals\": {\n    \"keystrokePatterns\": [/* behavioral data */],\n    \"pauseAnalysis\": [/* thinking patterns */],\n    \"revisionHistory\": [/* edit patterns */]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/student/tasks/{{taskId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "tasks", "{{taskId}}", "submit"]
+            },
+            "description": "Submit solution for a task"
+          }
+        },
+        {
+          "name": "Request Adaptive Hint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"student-001\",\n  \"currentProgress\": \"I've started the email but I'm not sure how to address the client's concerns professionally\",\n  \"context\": {\n    \"ccisLevel\": 2,\n    \"previousAttempts\": 0,\n    \"timeSpent\": 15\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/student/tasks/{{taskId}}/hint",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "tasks", "{{taskId}}", "hint"]
+            },
+            "description": "Request an adaptive hint based on current progress"
+          }
+        },
+        {
+          "name": "Get Task for Student",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/student/tasks/{{taskId}}?studentId=student-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "tasks", "{{taskId}}"],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "student-001"
+                }
+              ]
+            },
+            "description": "Get task details adapted for student's CCIS level"
+          }
+        },
+        {
+          "name": "Get Available Tasks for Student",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/student/tasks?studentId=student-001&competencyId=comm-001",
+              "host": ["{{baseUrl}}"],
+              "path": ["student", "tasks"],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "student-001"
+                },
+                {
+                  "key": "competencyId",
+                  "value": "comm-001"
+                }
+              ]
+            },
+            "description": "Get tasks available for student based on their progress"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. AI-Powered Task Features",
+      "description": "AI-powered task generation and analysis APIs",
+      "item": [
+        {
+          "name": "Generate Task with AI",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"competencyType\": \"COMMUNICATION\",\n  \"taskType\": \"WRITTEN_COMMUNICATION\",\n  \"difficulty\": \"INTERMEDIATE\",\n  \"context\": {\n    \"industry\": \"technology\",\n    \"culturalContext\": \"INDIA\",\n    \"targetAudience\": \"professionals\"\n  },\n  \"requirements\": {\n    \"duration\": 30,\n    \"scaffoldingLevel\": \"medium\",\n    \"includeRubric\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "generate"]
+            },
+            "description": "Generate a new task using AI"
+          }
+        },
+        {
+          "name": "Generate Task Sequence",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"competencyType\": \"PROBLEM_SOLVING\",\n  \"sequenceLength\": 5,\n  \"difficultyProgression\": \"gradual\",\n  \"learningObjectives\": [\n    \"Identify problem components\",\n    \"Analyze root causes\",\n    \"Generate solutions\",\n    \"Evaluate alternatives\",\n    \"Implement solutions\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/generate-sequence",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "generate-sequence"]
+            },
+            "description": "Generate a progressive sequence of tasks"
+          }
+        },
+        {
+          "name": "Generate Transfer Variations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sourceTaskId\": \"{{taskId}}\",\n  \"transferContexts\": [\n    {\n      \"industry\": \"healthcare\",\n      \"scenario\": \"patient communication\"\n    },\n    {\n      \"industry\": \"education\",\n      \"scenario\": \"parent-teacher communication\"\n    }\n  ],\n  \"preserveSkills\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/generate-transfer-variations",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "generate-transfer-variations"]
+            },
+            "description": "Generate transfer learning variations of existing tasks"
+          }
+        },
+        {
+          "name": "Create Learning Path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"student-001\",\n  \"competencyGoals\": [\n    {\n      \"competencyType\": \"COMMUNICATION\",\n      \"targetLevel\": 3,\n      \"priority\": \"high\"\n    },\n    {\n      \"competencyType\": \"PROBLEM_SOLVING\",\n      \"targetLevel\": 2,\n      \"priority\": \"medium\"\n    }\n  ],\n  \"timeframe\": {\n    \"duration\": 12,\n    \"unit\": \"weeks\"\n  },\n  \"preferences\": {\n    \"learningStyle\": \"visual\",\n    \"pacePreference\": \"self-paced\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/learning-path",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "learning-path"]
+            },
+            "description": "Create personalized learning path"
+          }
+        },
+        {
+          "name": "Adapt Learning Path",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"performanceData\": {\n    \"recentScores\": [85, 78, 92],\n    \"timeSpentPattern\": \"increasing\",\n    \"strugglingAreas\": [\"written_communication\"]\n  },\n  \"adaptationReason\": \"performance_based\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/learning-path/{{pathId}}/adapt",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "learning-path", "{{pathId}}", "adapt"]
+            },
+            "description": "Adapt learning path based on performance"
+          }
+        },
+        {
+          "name": "Track Learning Path Progress",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"milestoneId\": \"milestone-001\",\n  \"completionData\": {\n    \"score\": 88,\n    \"timeSpent\": 45,\n    \"hintsUsed\": 2,\n    \"attempts\": 1\n  },\n  \"reflectionNotes\": \"Found the task challenging but manageable. The hints were helpful.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/learning-path/{{pathId}}/progress",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "learning-path", "{{pathId}}", "progress"]
+            },
+            "description": "Track progress on learning path milestone"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Advanced Analytics",
+      "description": "Advanced analytics and insights APIs",
+      "item": [
+        {
+          "name": "Competency Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"competencyType\": \"COMMUNICATION\",\n  \"analysisType\": \"comprehensive\",\n  \"timeRange\": {\n    \"start\": \"2025-08-01\",\n    \"end\": \"2025-09-06\"\n  },\n  \"cohortFilters\": {\n    \"country\": \"INDIA\",\n    \"ageRange\": [20, 25]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/analytics/competency",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "analytics", "competency"]
+            },
+            "description": "Get detailed competency analytics"
+          }
+        },
+        {
+          "name": "Cross-Competency Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"primaryCompetencies\": [\"COMMUNICATION\", \"PROBLEM_SOLVING\"],\n  \"analysisDepth\": \"comprehensive\",\n  \"includeCorrelations\": true,\n  \"includePredictions\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/analytics/cross-competency",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "analytics", "cross-competency"]
+            },
+            "description": "Analyze relationships between competencies"
+          }
+        },
+        {
+          "name": "Learning Path Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/analytics/learning-path/{{pathId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "analytics", "learning-path", "{{pathId}}"]
+            },
+            "description": "Get learning path performance analytics"
+          }
+        },
+        {
+          "name": "Predictive Analytics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"student-001\",\n  \"predictionHorizon\": 90,\n  \"includeRecommendations\": true,\n  \"riskAssessment\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/analytics/predictive",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "analytics", "predictive"]
+            },
+            "description": "Get predictive analytics for student success"
+          }
+        },
+        {
+          "name": "Cohort Analysis",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cohortDefinition\": {\n    \"country\": \"INDIA\",\n    \"enrollmentPeriod\": {\n      \"start\": \"2025-08-01\",\n      \"end\": \"2025-08-31\"\n    },\n    \"demographics\": {\n      \"ageRange\": [20, 25],\n      \"educationLevel\": \"undergraduate\"\n    }\n  },\n  \"analysisMetrics\": [\n    \"progression_rate\",\n    \"competency_growth\",\n    \"engagement_patterns\",\n    \"success_predictors\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/ai-tasks/analytics/cohort",
+              "host": ["{{baseUrl}}"],
+              "path": ["ai-tasks", "analytics", "cohort"]
+            },
+            "description": "Analyze cohort performance patterns"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "personId",
+      "value": "person-uuid-here",
+      "type": "string",
+      "description": "UUID of a person"
+    },
+    {
+      "key": "assessmentId",
+      "value": "assessment-uuid-here",
+      "type": "string",
+      "description": "UUID of an assessment session"
+    },
+    {
+      "key": "taskId",
+      "value": "task-uuid-here",
+      "type": "string",
+      "description": "UUID of a task"
+    },
+    {
+      "key": "competencyId",
+      "value": "comp-uuid-here",
+      "type": "string",
+      "description": "UUID of a competency"
+    },
+    {
+      "key": "pathId",
+      "value": "path-uuid-here",
+      "type": "string",
+      "description": "UUID of a learning path"
+    }
+  ]
+}

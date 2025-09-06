@@ -6,6 +6,7 @@ import { DatabaseModule } from './shared/infrastructure/database';
 import { SharedInfrastructureModule } from './shared/infrastructure/shared-infrastructure.module';
 import { PersonModule } from './modules/person/person.module';
 import { AssessmentModule } from './modules/assessment/assessment.module';
+import { TaskModule } from './modules/task/task.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AssessmentModule } from './modules/assessment/assessment.module';
     SharedInfrastructureModule,
     PersonModule,
     AssessmentModule,
+    TaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],

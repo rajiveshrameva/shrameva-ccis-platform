@@ -393,6 +393,56 @@ enum CompetencyType {
     INNOVATION_ADAPTABILITY
 }
 
+enum TaskType {
+    MICRO_CONCEPT
+    MICRO_TASK
+    FUSION_TASK
+}
+
+enum TaskCategory {
+    // Communication Categories
+    EMAIL_WRITING
+    PRESENTATION_SKILLS
+    MEETING_FACILITATION
+    CLIENT_COMMUNICATION
+
+    // Data Analysis Categories  
+    EXCEL_ANALYSIS
+    SQL_QUERIES
+    DATA_VISUALIZATION
+    INSIGHT_GENERATION
+
+    // Technical Categories
+    PROGRAMMING_EXERCISE
+    SYSTEM_DESIGN
+    DEBUGGING_CHALLENGE
+    TECHNICAL_DOCUMENTATION
+
+    // Project Management Categories
+    PROJECT_PLANNING
+    TIMELINE_CREATION
+    RISK_ASSESSMENT
+    STAKEHOLDER_COMMUNICATION
+
+    // Problem Solving Categories
+    ROOT_CAUSE_ANALYSIS
+    DECISION_FRAMEWORK
+    SCENARIO_ANALYSIS
+    CREATIVE_PROBLEM_SOLVING
+
+    // Leadership Categories
+    TEAM_COORDINATION
+    CONFLICT_RESOLUTION
+    DELEGATION_EXERCISE
+    MENTORING_SIMULATION
+
+    // Innovation Categories
+    PROCESS_IMPROVEMENT
+    TECHNOLOGY_ADOPTION
+    CHANGE_MANAGEMENT
+    CREATIVE_IDEATION
+}
+
 // ===================================================================
 // EXISTING ASSESSMENT INFRASTRUCTURE MODELS
 // ===================================================================
@@ -492,6 +542,78 @@ model AssessmentSession {
     @@map("assessment_sessions")
 }
 
+// ===================================================================
+// TASK DOMAIN SCHEMA
+// ===================================================================
+
+model Task {
+    // Primary identifiers
+    id        String    @id @db.VarChar(25) // CID format: cid_[21-char-nanoid]
+    version   Int       @default(1) // Optimistic concurrency control
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    deletedAt DateTime? @db.Timestamptz // Soft delete support
+
+    // Core Task Information
+    title        String @db.VarChar(255)
+    description  String @db.Text
+    instructions String @db.Text
+    context      String @db.Text
+
+    // Task Configuration
+    expectedDuration Int     @default(5) // Minutes (1-60)
+    difficulty       Decimal @default(0.5) @db.Decimal(3, 2) // 0.1-1.0 scale
+    targetCCISLevel  Int     @default(1) // 1-4 CCIS levels
+    ccisLevelRange   Int[]   @default([1, 2]) // Supported CCIS level range
+
+    // Task Classification
+    taskType     TaskType
+    taskCategory TaskCategory
+    competencyId String       @db.VarChar(25) // Reference to competency
+
+    // Structured Content (JSON fields)
+    contentBlocks     Json // TaskContentBlocks interface
+    successCriteria   Json // SuccessCriteria interface  
+    assessmentRubric  Json // AssessmentRubric interface
+    hintsAvailable    Json // CCISLevelHints interface
+    scaffoldingConfig Json // ScaffoldingConfiguration interface
+
+    // Performance Metrics
+    averageCompletionTime Decimal? // Minutes
+    averageSuccessRate    Decimal? @db.Decimal(5, 4) // 0.0000-1.0000
+    totalAttempts         Int      @default(0)
+
+    // Content Organization
+    tags              String[] @default([]) // Content tags for search/filter
+    industryScenario  String?  @db.Text // Real-world context
+    prerequisiteTasks String[] @default([]) // Array of prerequisite task CIDs
+    followUpTasks     String[] @default([]) // Array of follow-up task CIDs  
+    relatedTasks      String[] @default([]) // Array of related task CIDs
+
+    // Lifecycle Management
+    publishedAt        DateTime? @db.Timestamptz // When task was published
+    deprecatedAt       DateTime? @db.Timestamptz // When task was deprecated
+    lastValidationDate DateTime? @db.Timestamptz // Last quality validation
+    contentVersion     String?   @db.VarChar(50) // Content versioning
+
+    // Relationships
+    interactions TaskInteraction[]
+
+    // Indexes for performance
+    @@index([competencyId])
+    @@index([taskType])
+    @@index([taskCategory])
+    @@index([targetCCISLevel])
+    @@index([difficulty])
+    @@index([publishedAt])
+    @@index([deprecatedAt])
+    @@index([createdAt])
+    @@index([competencyId, taskType])
+    @@index([taskCategory, targetCCISLevel])
+    @@index([publishedAt, deprecatedAt]) // For active tasks query
+    @@map("tasks")
+}
+
 model TaskInteraction {
     // Primary identifiers
     id        String @id @default(cuid()) @db.VarChar(25) // CID format
@@ -552,6 +674,7 @@ model TaskInteraction {
     deletedBy String?   @db.VarChar(50)
 
     // Relationships
+    task              Task              @relation(fields: [taskId], references: [id])
     assessmentSession AssessmentSession @relation(fields: [sessionId], references: [id])
     person            Person            @relation(fields: [personId], references: [id])
 
@@ -690,4 +813,349 @@ model AuditEvent {
     @@index([eventType, timestamp])
     @@index([entityId, eventType, timestamp])
     @@map("audit_events")
+}
+
+// ===================================================================
+// AI TASK GENERATION DOMAIN
+// ===================================================================
+
+model AITaskGenerationTemplate {
+    id        String    @id @default(cuid()) @db.VarChar(25)
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    deletedAt DateTime? @db.Timestamptz
+
+    // Template identity
+    name         String @db.VarChar(255)
+    description  String @db.Text
+    competencyId String @db.VarChar(25)
+    ccisLevel    Int // 1-4
+
+    // AI Generation Configuration
+    aiModel       String  @default("claude-3-5-sonnet") @db.VarChar(50)
+    promptVersion String  @default("v1.0.0") @db.VarChar(20)
+    temperature   Decimal @default(0.7) @db.Decimal(3, 2) // 0.0-1.0
+
+    // Template Structure (JSON)
+    promptTemplate   Json // Structured prompt for AI generation
+    contentStructure Json // Expected output structure
+    validationRules  Json // Quality validation criteria
+    variationSeeds   Json // Seeds for generating variations
+
+    // Performance Metrics
+    successRate     Decimal?  @db.Decimal(5, 4) // 0.0000-1.0000
+    averageQuality  Decimal?  @db.Decimal(3, 2) // 0.00-1.00
+    generationCount Int       @default(0)
+    lastGeneration  DateTime? @db.Timestamptz
+
+    // Relationships
+    generatedTasks AIGeneratedTask[]
+
+    @@index([competencyId])
+    @@index([ccisLevel])
+    @@index([competencyId, ccisLevel])
+    @@map("ai_task_generation_templates")
+}
+
+model AIGeneratedTask {
+    id        String    @id @default(cuid()) @db.VarChar(25)
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    deletedAt DateTime? @db.Timestamptz
+
+    // Generation context
+    templateId   String @db.VarChar(25)
+    taskId       String @db.VarChar(25) // Reference to actual Task
+    competencyId String @db.VarChar(25)
+    ccisLevel    Int
+
+    // AI Generation Data
+    aiModel        String   @db.VarChar(50)
+    promptUsed     String   @db.Text
+    responseRaw    String   @db.Text
+    generationTime BigInt // milliseconds
+    tokensUsed     Int?
+    costEstimate   Decimal? @db.Decimal(10, 4) // USD
+
+    // Quality Assessment
+    qualityScore     Decimal?             @db.Decimal(3, 2) // 0.00-1.00
+    validationFlags  Json? // Automated validation results
+    humanReviewed    Boolean              @default(false)
+    humanReviewScore Decimal?             @db.Decimal(3, 2)
+    approvalStatus   AITaskApprovalStatus @default(PENDING)
+
+    // Performance Tracking
+    studentAttempts  Int      @default(0)
+    successRate      Decimal? @db.Decimal(5, 4)
+    averageRating    Decimal? @db.Decimal(3, 2)
+    difficultyActual Decimal? @db.Decimal(3, 2) // Calculated from performance
+
+    // Relationships
+    template AITaskGenerationTemplate @relation(fields: [templateId], references: [id])
+
+    @@index([templateId])
+    @@index([taskId])
+    @@index([competencyId])
+    @@index([ccisLevel])
+    @@index([approvalStatus])
+    @@index([qualityScore])
+    @@index([createdAt])
+    @@map("ai_generated_tasks")
+}
+
+// ===================================================================
+// LEARNING PATHS DOMAIN
+// ===================================================================
+
+model LearningPath {
+    id        String    @id @default(cuid()) @db.VarChar(25)
+    createdAt DateTime  @default(now()) @db.Timestamptz
+    updatedAt DateTime  @updatedAt @db.Timestamptz
+    deletedAt DateTime? @db.Timestamptz
+
+    // Path identity
+    name        String @db.VarChar(255)
+    description String @db.Text
+    personId    String @db.VarChar(25)
+
+    // Path configuration
+    competencyFocus       String[] // Primary competencies
+    targetCCISLevel       Int      @default(4) // Goal CCIS level
+    estimatedDuration     Int // Hours
+    difficultyProgression String   @default("adaptive") // linear, adaptive, custom
+
+    // AI Personalization
+    aiPersonalized      Boolean @default(true)
+    adaptationAlgorithm String  @default("reinforcement_learning") @db.VarChar(50)
+    personalityProfile  Json? // Student learning preferences
+    performanceHistory  Json? // Historical performance data
+
+    // Path State
+    status           LearningPathStatus @default(ACTIVE)
+    currentMilestone Int                @default(0)
+    progressPercent  Decimal            @default(0) @db.Decimal(5, 2) // 0.00-100.00
+    lastActivity     DateTime?          @db.Timestamptz
+
+    // Analytics
+    totalTasksCompleted Int      @default(0)
+    averageSessionTime  Int? // Minutes
+    streakDays          Int      @default(0)
+    motivationScore     Decimal? @db.Decimal(3, 2) // 0.00-1.00
+
+    // Relationships
+    milestones LearningMilestone[]
+    analytics  LearningPathAnalytics[]
+
+    @@index([personId])
+    @@index([status])
+    @@index([competencyFocus])
+    @@index([targetCCISLevel])
+    @@index([progressPercent])
+    @@map("learning_paths")
+}
+
+model LearningMilestone {
+    id        String   @id @default(cuid()) @db.VarChar(25)
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+
+    // Milestone identity
+    pathId      String @db.VarChar(25)
+    order       Int
+    name        String @db.VarChar(255)
+    description String @db.Text
+
+    // Milestone configuration
+    competencyId      String @db.VarChar(25)
+    requiredCCISLevel Int
+    estimatedHours    Int
+    taskSequence      Json // Ordered array of task IDs and configurations
+
+    // AI Generation
+    aiGenerated         Boolean @default(false)
+    adaptiveAdjustments Json? // AI-driven adjustments based on performance
+
+    // Progress tracking
+    status         MilestoneStatus @default(LOCKED)
+    completedAt    DateTime?       @db.Timestamptz
+    tasksCompleted Int             @default(0)
+    totalTasks     Int             @default(1)
+    attempts       Int             @default(0)
+
+    // Performance metrics
+    bestScore    Decimal? @db.Decimal(5, 4) // 0.0000-1.0000
+    averageScore Decimal? @db.Decimal(5, 4)
+    timeSpent    Int      @default(0) // Minutes
+    hintsUsed    Int      @default(0)
+    retryCount   Int      @default(0)
+
+    // Relationships
+    path LearningPath @relation(fields: [pathId], references: [id])
+
+    @@index([pathId])
+    @@index([order])
+    @@index([competencyId])
+    @@index([status])
+    @@index([requiredCCISLevel])
+    @@map("learning_milestones")
+}
+
+// ===================================================================
+// ADVANCED ANALYTICS DOMAIN
+// ===================================================================
+
+model CompetencyAnalytics {
+    id        String   @id @default(cuid()) @db.VarChar(25)
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+
+    // Analytics scope
+    personId     String   @db.VarChar(25)
+    competencyId String   @db.VarChar(25)
+    analysisDate DateTime @db.Timestamptz
+
+    // Current state
+    currentCCISLevel  Int
+    previousCCISLevel Int?
+    progressionRate   Decimal @db.Decimal(5, 4) // Level change per week
+    confidenceScore   Decimal @db.Decimal(3, 2) // 0.00-1.00
+    masteryIndicators Json // Specific mastery evidence
+
+    // Performance metrics
+    tasksCompleted        Int
+    averageScore          Decimal @db.Decimal(5, 4)
+    averageTimePerTask    Decimal @db.Decimal(8, 2) // Minutes
+    errorRecoveryRate     Decimal @db.Decimal(5, 4)
+    transferSuccessRate   Decimal @db.Decimal(5, 4)
+    helpSeekingEfficiency Decimal @db.Decimal(5, 4)
+
+    // Behavioral patterns (JSON)
+    learningPatterns Json // Study habits, peak performance times
+    strugglingAreas  Json // Specific skill gaps identified
+    strengthAreas    Json // Areas of demonstrated excellence
+    adaptationNeeds  Json // Recommended interventions
+
+    // Predictive analytics
+    projectedCCISLevel Int? // Predicted level in 30 days
+    readinessForLevel4 Decimal? @db.Decimal(3, 2) // Probability 0.00-1.00
+    industryReadiness  Json // Readiness scores for different industries
+    skillGapAnalysis   Json // Gaps compared to industry standards
+
+    @@index([personId])
+    @@index([competencyId])
+    @@index([analysisDate])
+    @@index([currentCCISLevel])
+    @@index([personId, competencyId])
+    @@map("competency_analytics")
+}
+
+model CrossCompetencyAnalytics {
+    id        String   @id @default(cuid()) @db.VarChar(25)
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+
+    // Analytics scope
+    personId     String   @db.VarChar(25)
+    analysisDate DateTime @db.Timestamptz
+
+    // Cross-competency metrics
+    overallCCISLevel    Decimal @db.Decimal(3, 2) // Weighted average
+    competencyBalance   Decimal @db.Decimal(3, 2) // How evenly developed
+    transferAbility     Decimal @db.Decimal(3, 2) // Skill transfer across competencies
+    metacognitiveMature Decimal @db.Decimal(3, 2) // Self-awareness across all areas
+
+    // Correlation analysis (JSON)
+    competencyCorrelations Json // How competencies influence each other
+    strengthClusters       Json // Groups of related strong competencies
+    developmentPriorities  Json // Recommended focus areas
+
+    // Industry alignment
+    industryFitScores     Json // Fit scores for different industries
+    roleReadinessScores   Json // Readiness for specific job roles
+    marketDemandAlignment Json // Alignment with current job market
+
+    // Predictive modeling
+    careerTrajectories   Json // Possible career paths based on current profile
+    skillDevelopmentPlan Json // AI-recommended development plan
+    placementProbability Decimal @db.Decimal(3, 2) // Job placement likelihood
+
+    @@index([personId])
+    @@index([analysisDate])
+    @@index([overallCCISLevel])
+    @@map("cross_competency_analytics")
+}
+
+model LearningPathAnalytics {
+    id        String   @id @default(cuid()) @db.VarChar(25)
+    createdAt DateTime @default(now()) @db.Timestamptz
+    updatedAt DateTime @updatedAt @db.Timestamptz
+
+    // Analytics scope
+    pathId       String   @db.VarChar(25)
+    personId     String   @db.VarChar(25)
+    analysisDate DateTime @db.Timestamptz
+
+    // Engagement metrics
+    sessionCount         Int
+    totalTimeSpent       Int // Minutes
+    averageSessionLength Int // Minutes
+    longestStreak        Int // Days
+    currentStreak        Int // Days
+    dropoffRisk          Decimal @db.Decimal(3, 2) // 0.00-1.00
+
+    // Performance progression
+    startingCCISLevels    Json // Competency levels at path start
+    currentCCISLevels     Json // Current competency levels
+    progressionVelocity   Json // Rate of improvement per competency
+    difficultyProgression Json // How difficulty has scaled
+
+    // Learning effectiveness
+    retentionRate         Decimal  @db.Decimal(5, 4) // Knowledge retention
+    transferEffectiveness Decimal  @db.Decimal(5, 4) // Application to new tasks
+    adaptationSuccess     Decimal  @db.Decimal(5, 4) // How well AI adaptations work
+    satisfactionScore     Decimal? @db.Decimal(3, 2) // Student feedback
+
+    // Optimization insights (JSON)
+    bottleneckAnalysis     Json // Where students get stuck
+    skipPatterns           Json // Tasks frequently skipped
+    retryAnalysis          Json // Tasks requiring multiple attempts
+    recommendedAdjustments Json // AI suggestions for path optimization
+
+    // Relationships
+    path LearningPath @relation(fields: [pathId], references: [id])
+
+    @@index([pathId])
+    @@index([personId])
+    @@index([analysisDate])
+    @@index([progressionVelocity])
+    @@map("learning_path_analytics")
+}
+
+// ===================================================================
+// ENUMS FOR NEW FEATURES
+// ===================================================================
+
+enum AITaskApprovalStatus {
+    PENDING
+    APPROVED
+    REJECTED
+    NEEDS_REVISION
+    HUMAN_REVIEW_REQUIRED
+}
+
+enum LearningPathStatus {
+    ACTIVE
+    PAUSED
+    COMPLETED
+    ABANDONED
+    ARCHIVED
+}
+
+enum MilestoneStatus {
+    LOCKED
+    AVAILABLE
+    IN_PROGRESS
+    COMPLETED
+    SKIPPED
+    FAILED
 }
